@@ -1,0 +1,54 @@
+# SolarEdge auf deinem Dashboard
+
+Eine kompakte Übersicht mit großer Tageserzeugung, vier Leistungskacheln, 24-Stunden-Verlauf, Temperatur und Abrufstatus. Über das Diagramm-Symbol gelangst du zum Home-Assistant-Energie-Dashboard. Antippen der Werte öffnet ihre Details. Die optionale zweite Karte ergänzt sämtliche Energiezähler und Diagnosewerte; beide Karten zusammen zeigen alle 18 Sensoren.
+
+**Vorschau mit Beispieldaten**, aus der getrennten HA-Testinstanz; Werte und Verlauf sind synthetisch. Deine Karte zeigt die tatsächlichen Sensorwerte.
+
+![SolarEdge-Modul im dunklen Theme mit Beispieldaten](preview-dark.png)
+
+[Vorschau im hellen Theme](preview-light.png)
+
+## Einfügen
+
+Die Übersicht nutzt **Mushroom**, **mini-graph-card** und **card-mod**. Diese drei Erweiterungen sind in deiner gezeigten HACS-Liste bereits vorhanden. card-mod liefert auch die gemeinsame Kartenhülle; zusätzliche Helfer oder Änderungen an der Add-on-Konfiguration sind nicht erforderlich.
+
+1. Dein normales Dashboard öffnen, **⋮ → Dashboard bearbeiten → Karte hinzufügen** wählen.
+2. Ganz unten **Manuell** auswählen.
+3. Den Inhalt von [solaredge-overview.yaml](solaredge-overview.yaml) vollständig in den Karteneditor kopieren, vorhandenen Text ersetzen und speichern. Im GitHub-Dateifenster öffnet **Raw** den reinen Text.
+4. Für die Zähler und alle übrigen Werte eine weitere manuelle Karte mit [solaredge-details.yaml](solaredge-details.yaml) hinzufügen.
+
+**Die Dateien sind einzelne Karten.** Nicht in `configuration.yaml` oder in den YAML-Editor des gesamten Dashboards einfügen. Auch ein Add-on-Update ist hierfür nicht nötig. In einem Dashboard mit Abschnitten kann die Übersicht für mehr Platz über die Layout-Einstellungen auf die volle Abschnittsbreite gesetzt werden.
+
+## Was du siehst
+
+| Anzeige | Sensor / Bedeutung |
+| --- | --- |
+| Große Zahl | `sensor.solaredge_energy_today`: PV-Erzeugung heute in kWh |
+| PV-Leistung | `sensor.solaredge_pv_power`: Leistung beim letzten Abruf |
+| Hausverbrauch | `sensor.solaredge_consumption_power`: Verbrauchsleistung beim letzten Abruf |
+| Netzbezug / Einspeisung | Jeweilige Leistungswerte beim letzten Abruf |
+| Diagramm | PV- und Hausleistung aus deiner HA-Historie, in kW, vergangene 24 Stunden |
+| Status | Zustand des letzten Abrufs; antippen für den Originalstatus |
+| Datenstand | Zeitpunkt des letzten erfolgreichen Abrufs in deiner HA-Zeitzone |
+| Zähler & Details | Fünf Energiezähler seit Einrichtung sowie Anlagen- und Abrufinformationen |
+
+Der Standardabruf erfolgt alle **30 Minuten**. Die Leistungen sind Momentaufnahmen; die Kurven verbinden erfasste Werte und erlauben keine Aussage über die Leistung zwischen den Abrufen. Neue Installationen müssen erst Historie sammeln. Der Verlauf benötigt Home Assistants Recorder; die beiden Leistungssensoren dürfen dort nicht ausgeschlossen sein.
+
+Fehlende Daten werden nicht als Null dargestellt. SolarEdge zeigt möglicherweise nur die gerade aktive Netzrichtung an; die andere Kachel kann dann **nicht verfügbar** sein. Der Statuschip zeigt den Abrufzustand, nicht die Frische jedes einzelnen Sensors. Die Fußzeile warnt zusätzlich, wenn seit über 75 Minuten kein erfolgreicher Abruf vorliegt. Bei einem selbst gewählten längeren Abrufintervall kannst du diesen Grenzwert im YAML anpassen.
+
+Die Gesamtzähler stehen bewusst separat als **Energiezähler seit Einrichtung**. Es sind weder Tageswerte noch die gesamte historische Produktion deiner Anlage. Für Tages-, Wochen- und Monatsbilanzen verwende das reguläre [Energie-Dashboard](../README.md#energie-dashboard) mit den dafür vorgesehenen Gesamtzählern.
+
+## Wenn eine Karte oder ein Wert fehlt
+
+- **„Custom element doesn't exist“:** Die genannte Erweiterung in HACS öffnen, ihre Dashboard-Ressource prüfen und den Browser vollständig neu laden. Die drei benötigten Ressourcen müssen als JavaScript-Module eingebunden sein. `mod-card` gehört zu card-mod.
+- **„Entität nicht verfügbar“ / fehlender Wert:** Unter **Einstellungen → Geräte & Dienste → Entitäten** nach `solaredge` suchen. Die Dateien verwenden die Standard-IDs des Add-ons. Wenn HA einen Suffix wie `_2` vergeben hat oder du Sensoren umbenannt hast, ersetze die betreffende ID überall in beiden Dateien. Das gilt auch für IDs in den Textvorlagen.
+- **Leeres Diagramm:** Erst nach erfolgreichen Abrufen und gespeicherter Historie erscheinen Punkte. Prüfe Recorder und Sensor-IDs. Diese Karte startet keine zusätzlichen SolarEdge-Abfragen.
+- **Andere Farbgestaltung:** Die Karte folgt deinem hellen oder dunklen HA-Theme. Der warme Verlauf und die Rundung werden durch card-mod ergänzt.
+
+## Prüfung
+
+Beide Dateien lassen sich als YAML laden und verwenden ausschließlich die 18 vom Add-on veröffentlichten Sensoren. Die Vorlagen wurden in einer getrennten Home-Assistant-Instanz mit Zahlen, echten Nullwerten, fehlenden Werten sowie alten und fehlenden Abrufzeitpunkten geprüft.
+
+Die Karten wurden in Home Assistant 2026.10 mit Mushroom 5.2.3, mini-graph-card 0.13.0 und card-mod 4.2.1 dargestellt. Helles und dunkles Theme sowie schmale Bildschirmbreiten wurden geprüft. Browserfehler wurden dabei nicht festgestellt. Die Vorschau verwendet ausschließlich Beispieldaten, keine Zugangsdaten oder echten Anlagenwerte.
+
+Die Kartentypen sind anhand ihrer offiziellen Dokumentation konfiguriert: [Mushroom](https://github.com/piitaya/lovelace-mushroom), [mini-graph-card](https://github.com/kalkih/mini-graph-card), [card-mod](https://github.com/thomasloven/lovelace-card-mod).

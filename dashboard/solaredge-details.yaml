@@ -1,0 +1,46 @@
+# Optionale zweite manuelle Karte: zusammen mit der Übersicht alle 18 Sensoren.
+type: entities
+title: SolarEdge · Zähler & Details
+show_header_toggle: false
+state_color: false
+entities:
+  - type: section
+    label: Energiezähler seit Einrichtung · kWh
+  - entity: sensor.solaredge_pv_energy_total
+    name: Solarerzeugung
+    icon: mdi:solar-power-variant
+  - entity: sensor.solaredge_consumption_energy_total
+    name: Hausverbrauch
+    icon: mdi:home-lightning-bolt-outline
+  - entity: sensor.solaredge_self_consumption_energy_total
+    name: PV-Eigenverbrauch
+    icon: mdi:home-import-outline
+  - entity: sensor.solaredge_grid_import_energy_total
+    name: Netzbezug
+    icon: mdi:transmission-tower-import
+  - entity: sensor.solaredge_grid_export_energy_total
+    name: Einspeisung
+    icon: mdi:transmission-tower-export
+  - type: section
+    label: Anlage & Datenquelle
+  - entity: sensor.solaredge_site_status
+    name: Anlagenstatus
+    icon: mdi:solar-panel-large
+  - entity: sensor.solaredge_last_update
+    name: SolarEdge-Anzeige beim Abruf
+    icon: mdi:web-clock
+  - entity: sensor.solaredge_scraper_last_success
+    name: Erfolgreich abgerufen
+  - entity: sensor.solaredge_scraper_last_attempt
+    name: Letzter Abrufversuch
+  - entity: sensor.solaredge_scraper_status
+    name: Abrufstatus
+    icon: mdi:cloud-check-outline
+  - entity: sensor.solaredge_scraper_response_time
+    name: Abrufdauer
+  - entity: sensor.solaredge_energy_gap_count
+    name: Fehlende Energietage
+    icon: mdi:calendar-alert
+card_mod:
+  style: |
+    :host, ha-card { border-radius: 24px; border: 1px solid var(--divider-color); }

@@ -20,10 +20,10 @@ Parser: Einheiten, Komma/Punkt, Gruppierung, Rundungsauflösung, unparsebare/neg
 - Home Assistant legt 18 Sensoren an und nimmt alle fünf kWh-Gesamtzähler als Energie-Summenstatistiken an.
 - PV-Erzeugung, Netzbezug und Einspeisung wurden im Energie-Dashboard gespeichert; Home Assistants Energie-Validierung meldet keine Fehler.
 - MQTT-Broker-Neustart: automatische Wiederverbindung mit erneuter Discovery und vorhandenen Werten, ohne neuen SolarEdge-Abruf.
+- Nutzergerät mit Home Assistant auf x86-64: am 02.10.2026 bestätigen die bereitgestellten Logs unter 0.2.1 MQTT-Verbindung, Chromium-Start, regulären Login, private Session-Speicherung und einen vollständigen Dashboard-Abruf mit gespeichertem Energie-Ledger.
 
 ## Noch nicht bestätigt / Grenzen
 
-- Vollständiger Betrieb unter Home Assistant Supervisor einschließlich dessen AppArmor-Profil. Der Nutzer hat Installation und MQTT-Verbindung auf x86-64 bestätigt; beim ersten Browseraufruf trat ein noch nicht eingegrenzter Fehler auf. 0.2.1 behebt den anschließenden Abbruch der Retry-Schleife und ergänzt sichere Ursachen-Diagnose; eine Bestätigung auf diesem Gerät steht aus.
 - Nativer AArch64-Betrieb. ARM64-Build und Chromium-Download funktionieren; QEMU unter AMD64 ist kein belastbarer Chromium-Laufzeitnachweis.
 - Mehrtägiger unbeaufsichtigter Dauerbetrieb und realer Mitternachtswechsel. Die Ledger-Logik ist automatisch geprüft; tatsächliche vergangene Tagesansichten wurden live ausgelesen.
 - Andere Anlagen, Konto-Sprachen, Batterieanlagen und abweichende SolarEdge-Frontends. Vor produktivem Betrieb dort Discovery prüfen.

@@ -1,0 +1,178 @@
+# Als eine manuelle Karte einfügen, nicht in configuration.yaml.
+# Benötigt: Mushroom, mini-graph-card, card-mod.
+type: custom:mod-card
+card:
+  type: vertical-stack
+  cards:
+    - type: markdown
+      content: >-
+        <p>SOLAREDGE</p>
+
+        <h2>Dein Energieüberblick</h2>
+
+        {% set value = states('sensor.solaredge_energy_today') %}
+        <h1>{{ ('%.2f' | format(value | float) | replace('.', ',')) if is_number(value) else '—' }} <small>kWh</small></h1>
+
+        <p>Solarerzeugung heute</p>
+      card_mod:
+        style:
+          .: |
+            :host, ha-card {
+              background: transparent;
+              border: 0;
+              box-shadow: none;
+            }
+          ha-markdown$: |
+            p:first-child {
+              color: var(--secondary-text-color);
+              font-size: 11px;
+              font-weight: 700;
+              letter-spacing: 3px;
+              margin: 8px 0 10px;
+            }
+            h2 { font-size: 19px; font-weight: 500; margin: 0 0 18px; }
+            h1 {
+              color: var(--primary-text-color);
+              font-size: clamp(42px, 11vw, 62px);
+              font-weight: 700;
+              letter-spacing: -2px;
+              line-height: 1.1;
+              margin: 0;
+            }
+            h1 small { font-size: 20px; font-weight: 400; letter-spacing: 0; }
+            p:last-child { color: var(--secondary-text-color); margin: 8px 0 0; }
+    - type: custom:mushroom-chips-card
+      alignment: start
+      chips:
+        - type: template
+          entity: sensor.solaredge_scraper_status
+          icon: >-
+            {% set s = states(entity) %}
+            {{ 'mdi:check-circle' if s == 'connected' else 'mdi:sync' if s == 'scraping' else 'mdi:alert-circle-outline' }}
+          icon_color: >-
+            {% set s = states(entity) %}
+            {{ 'teal' if s == 'connected' else 'blue' if s == 'scraping' else 'orange' }}
+          content: >-
+            {% set s = states(entity) %}
+            {% set labels = {'connected': 'Abruf OK', 'scraping': 'Wird abgerufen', 'error': 'Abruffehler', 'login_required': 'Login erforderlich', 'manual_login_required': 'Login bestätigen', 'mqtt_disconnected': 'MQTT getrennt', 'rate_limited': 'Abruf pausiert', 'energy_ledger_error': 'Zähler prüfen', 'offline': 'Offline', 'unavailable': 'Nicht verfügbar', 'unknown': 'Noch keine Daten'} %}
+            {{ labels.get(s, 'Status prüfen') }}
+          tap_action:
+            action: more-info
+        - type: entity
+          entity: sensor.solaredge_outside_temperature
+          icon: mdi:thermometer
+          icon_color: orange
+          tap_action:
+            action: more-info
+        - type: action
+          icon: mdi:chart-box-outline
+          tap_action:
+            action: navigate
+            navigation_path: /energy
+      card_mod:
+        style: |
+          :host, ha-card { padding: 4px 16px 16px; }
+    - type: grid
+      columns: 2
+      square: false
+      cards:
+        - type: custom:mushroom-entity-card
+          entity: sensor.solaredge_pv_power
+          name: PV-Leistung
+          icon: mdi:solar-power-variant
+          icon_color: amber
+          primary_info: state
+          secondary_info: name
+          layout: horizontal
+          tap_action:
+            action: more-info
+        - type: custom:mushroom-entity-card
+          entity: sensor.solaredge_consumption_power
+          name: Hausverbrauch
+          icon: mdi:home-lightning-bolt-outline
+          icon_color: cyan
+          primary_info: state
+          secondary_info: name
+          layout: horizontal
+          tap_action:
+            action: more-info
+        - type: custom:mushroom-entity-card
+          entity: sensor.solaredge_grid_import_power
+          name: Netzbezug
+          icon: mdi:transmission-tower-import
+          icon_color: blue
+          primary_info: state
+          secondary_info: name
+          layout: horizontal
+          tap_action:
+            action: more-info
+        - type: custom:mushroom-entity-card
+          entity: sensor.solaredge_grid_export_power
+          name: Einspeisung
+          icon: mdi:transmission-tower-export
+          icon_color: teal
+          primary_info: state
+          secondary_info: name
+          layout: horizontal
+          tap_action:
+            action: more-info
+    - type: custom:mini-graph-card
+      name: Leistungsverlauf · 24 Stunden
+      icon: mdi:chart-line
+      entities:
+        - entity: sensor.solaredge_pv_power
+          name: PV
+          color: '#f6b44b'
+        - entity: sensor.solaredge_consumption_power
+          name: Haus
+          color: '#36bcc8'
+      hours_to_show: 24
+      points_per_hour: 2
+      aggregate_func: last
+      smoothing: false
+      value_factor: -3
+      unit: kW
+      decimals: 2
+      hour24: true
+      height: 110
+      line_width: 3
+      lower_bound: 0
+      show:
+        state: false
+        labels: true
+        legend: true
+        fill: fade
+        points: hover
+      card_mod:
+        style: |
+          :host, ha-card { background: transparent; border: 0; box-shadow: none; }
+          .header { font-size: 14px; }
+    - type: markdown
+      content: >-
+        {% set stamp = as_timestamp(states('sensor.solaredge_scraper_last_success'), none) %}
+        {% if stamp is not none %}
+          {% set age = ((as_timestamp(now()) - stamp) / 60) | int %}
+          **Datenstand:** {{ stamp | timestamp_custom('%d.%m. · %H:%M', true) }}
+          {% if age > 75 %} · ⚠ Seit über 75 Min. kein erfolgreicher Abruf.{% endif %}
+        {% else %}
+          **Datenstand:** Noch kein erfolgreicher Abruf verfügbar.
+        {% endif %}
+
+        Momentaufnahmen · Standardabruf alle 30 Min.
+      card_mod:
+        style:
+          .: |
+            :host, ha-card { background: transparent; border: 0; box-shadow: none; }
+          ha-markdown$: |
+            p { color: var(--secondary-text-color); font-size: 12px; line-height: 1.6; margin: 0 0 4px; }
+card_mod:
+  style: |
+    :host, ha-card {
+      border-radius: 24px;
+      --vertical-stack-card-gap: 0px;
+      overflow: hidden;
+      border: 1px solid var(--divider-color);
+      background: radial-gradient(ellipse at top right, rgba(246, 180, 75, 0.16), transparent 65%),
+                  var(--ha-card-background, var(--card-background-color));
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    }

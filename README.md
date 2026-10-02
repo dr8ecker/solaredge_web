@@ -11,7 +11,7 @@ Installierbares Add-on mit Chromium, regulärem SolarEdge-Login, persistenten En
 5. MQTT-Integration und Broker einrichten. Bei installiertem Mosquitto-Add-on kann `mqtt_host` leer bleiben; der MQTT-Dienst des Supervisors wird verwendet. Für einen externen Broker Host und Zugangsdaten konfigurieren.
 6. Mit `mode: normal` starten. Die Sensoren erscheinen beim Gerät **SolarEdge Web Scraper**.
 
-**HACS wird nicht benötigt.** Home Assistant OS bzw. eine Installation mit Add-on-Support ist erforderlich. Home Assistant Container kann das Image separat starten, besitzt aber keinen Add-on-Store.
+**Für das Add-on wird HACS nicht benötigt.** Home Assistant OS bzw. eine Installation mit Add-on-Support ist erforderlich. Home Assistant Container kann das Image separat starten, besitzt aber keinen Add-on-Store.
 
 ## Energie-Dashboard
 
@@ -29,9 +29,13 @@ Alle **30 Minuten** ein Abruf genügt für Energiezuwächse; Leistungswerte blei
 
 Die HA-Energiehistorie beginnt mit der Inbetriebnahme. Nachgeholte Tage werden im aktuellen Abruf übernommen, nicht rückwirkend in die ursprünglichen Stunden geschrieben. Drei-Tages- und Wochenansichten werden nicht wiederholt addiert.
 
+## Dashboard-Karten
+
+[Fertiges SolarEdge-Dashboard-Modul mit Einfüge-Anleitung](dashboard/README.md): große Tageserzeugung, Leistungskacheln, 24-Stunden-Verlauf und Abrufstatus. Eine optionale Detailkarte ergänzt alle Energiezähler und Diagnosewerte. Nutzt die vorhandenen HACS-Karten Mushroom, mini-graph-card und card-mod.
+
 ## Stand
 
-**0.2.1**, erste experimentelle Version. Login, Session, echte Tageswerte, Datumwechsel, MQTT und Energie-Dashboard wurden in AMD64-Containern mit separatem Home Assistant geprüft. ARM64 lässt sich bauen; ein nativer ARM64-Lauf und der vollständige Betrieb unter dem echten Supervisor sind noch nicht bestätigt. 0.2.1 behebt einen Abbruch im Browser-Retry und ergänzt sichere Fehlerdiagnose.
+**0.2.1**, erste experimentelle Version. Login, Session, echte Tageswerte, Datumwechsel, MQTT und Energie-Dashboard wurden in AMD64-Containern mit separatem Home Assistant geprüft. Der Nutzer hat auf seinem x86-64-Home-Assistant erfolgreiche MQTT-Verbindung, Chromium-Start, Login und einen vollständigen Abruf mit gespeichertem Energie-Ledger bestätigt. ARM64 lässt sich bauen; ein nativer ARM64-Lauf und mehrtägiger Dauerbetrieb sind noch nicht bestätigt. 0.2.1 behebt einen Abbruch im Browser-Retry und ergänzt sichere Fehlerdiagnose.
 
 - [Konfiguration, Sensoren und Fehlersuche](solaredge_web/README.md)
 - [Energiezähler und Tageswechsel](solaredge_web/ENERGY-DESIGN.md)
