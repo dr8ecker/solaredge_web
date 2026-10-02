@@ -1,11 +1,5 @@
 FROM python:3.12.12-slim-bookworm
 
-ARG BUILD_VERSION=0.2.0
-ARG BUILD_ARCH=amd64
-LABEL io.hass.version="${BUILD_VERSION}" \
-      io.hass.type="app" \
-      io.hass.arch="${BUILD_ARCH}"
-
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
@@ -21,6 +15,13 @@ RUN apt-get update \
     && useradd --create-home --uid 1000 --shell /usr/sbin/nologin scraper \
     && chmod -R a+rX /opt/playwright \
     && rm -rf /var/lib/apt/lists/* /root/.cache
+
+# Keep version labels below dependencies so updates can reuse Chromium layers.
+ARG BUILD_VERSION=0.2.1
+ARG BUILD_ARCH=amd64
+LABEL io.hass.version="${BUILD_VERSION}" \
+      io.hass.type="app" \
+      io.hass.arch="${BUILD_ARCH}"
 
 COPY app ./app
 COPY tools ./tools

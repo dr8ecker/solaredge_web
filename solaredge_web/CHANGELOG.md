@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1
+
+- Browser-Idle-Fehler beenden den Retry-Ablauf nicht mehr. Defekte/geschlossene Seiten werden mit neuem Browser wiederholt.
+- Regulär unterbrochene Navigation wartet auf bestätigte UI statt sofort einen konkurrierenden Aufruf zu starten.
+- Sichere Fehlerkategorien, Netzwerkcodes, Ausführungsphase und Architektur-/Speicherdiagnose ohne rohe Browsermeldungen.
+- Regressionstests für die Folge Navigationsfehler → Idle-Fehler → neuer Versuch.
+
 ## 0.2.0
 
 - Normaler SolarEdge-Login, Session-Wiederverwendung und eindeutige Anlagenauswahl.

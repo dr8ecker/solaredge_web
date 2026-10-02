@@ -1,4 +1,4 @@
-# SolarEdge Web Scraper 0.2.0
+# SolarEdge Web Scraper 0.2.1
 
 Das Add-on liest mit Playwright Chromium sichtbare SolarEdge-DOM-Werte und reguläre Energie-Tooltips. Scraper und MQTT sind getrennte Komponenten. Keine SolarEdge API, keine eigenen Requests gegen SolarEdge-Endpunkte, kein Modbus, keine OCR und keine Bildauswertung. Die normale Webseite führt ihre üblichen Browserrequests selbst aus.
 
@@ -106,6 +106,8 @@ Unbestätigter Login setzt `login_required` und begrenzt weitere Anmeldeversuche
 Bei geänderter Webseite zuerst Discovery-Berichte prüfen. Fehlende/unparsebare Felder werden unavailable; bei einem kompletten fehlgeschlagenen Abruf bleiben vorherige Werte innerhalb der Fehler-Toleranz erhalten. Nie Parsingfehler als Null interpretieren.
 
 Healthcheck: Prozess, Heartbeat, Browser, Alter des letzten erfolgreichen Abrufs und MQTT. Kurze Start-Schonfrist. `health.json` und `last_scrape.json` enthalten keine Zugangsdaten.
+
+Ab 0.2.1 nennt `Dashboard failure details` die Ausführungsphase, eine sichere Fehlerkategorie und bekannte Netzwerkcodes (z.B. `ERR_NAME_NOT_RESOLVED` für DNS), sowie Architektur, gegebenenfalls Container-Speicherlimit und OOM-Kill-Zähler. Rohe Playwright-Meldungen und URLs werden nicht geloggt. Ein fehlgeschlagenes Entladen der Seite beendet den Retry-Ablauf nicht; der defekte Browser wird geschlossen und beim nächsten Versuch neu gestartet.
 
 ## Persistenz und Sicherheit
 

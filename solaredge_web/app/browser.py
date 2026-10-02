@@ -1,6 +1,7 @@
 """Keep one Chromium context. Never call SolarEdge endpoints directly."""
 
 import json
+import asyncio
 import logging
 import os
 from urllib.parse import urlsplit
@@ -8,6 +9,7 @@ from urllib.parse import urlsplit
 from playwright.async_api import async_playwright
 
 from .config import Config, ConfigurationError
+from .diagnostics import failure_details
 
 LOGGER = logging.getLogger(__name__)
 
@@ -23,12 +25,23 @@ class BrowserManager:
         self.browser = None
         self.context = None
         self.page = None
+        self.page_crashed = False
+        self.stage = 'not_started'
 
     @property
     def connected(self) -> bool:
         return bool(self.browser and self.browser.is_connected())
 
+    @property
+    def usable(self) -> bool:
+        return bool(self.connected and self.page and not self.page.is_closed() and not self.page_crashed)
+
+    def on_page_crash(self, *_):
+        self.page_crashed = True
+        LOGGER.warning('Chromium page crashed; browser will be restarted on the next attempt')
+
     async def start(self) -> None:
+        self.stage = 'browser_start'
         if not self.config.headless and os.name != "nt" and not os.getenv("DISPLAY"):
             raise ConfigurationError("headless=false requires a local graphical display")
         self.playwright = await async_playwright().start()
@@ -70,6 +83,8 @@ class BrowserManager:
             self.context.set_default_timeout(self.config.page_timeout)
             self.context.set_default_navigation_timeout(self.config.page_timeout)
             self.page = await self.context.new_page()
+            self.page_crashed = False
+            self.page.on('crash', self.on_page_crash)
             LOGGER.info("Chromium started in %s mode", "headless" if self.config.headless else "visible")
         except BaseException:
             await self.close()
@@ -77,7 +92,16 @@ class BrowserManager:
 
     async def load_monitoring(self) -> dict:
         """A page-load test, not proof of login or a completed dashboard scrape."""
-        response = await self.page.goto(self.config.monitoring_url, wait_until="domcontentloaded")
+        self.stage = 'monitoring_navigation'
+        try:
+            response = await self.page.goto(self.config.monitoring_url, wait_until="domcontentloaded")
+        except Exception as error:
+            if failure_details(error)['network_code'] != 'ERR_ABORTED' or not self.usable:
+                raise
+            # A regular client-side redirect can interrupt goto. Confirm the
+            # rendered UI below rather than start a competing navigation.
+            LOGGER.info('Monitoring navigation interrupted by redirect; waiting for visible UI')
+            response = None
         if response is not None and response.status == 429:
             raise RateLimited('Monitoring UI rate limit; automatic loading delayed')
         if response is not None and response.status >= 400:
@@ -85,6 +109,7 @@ class BrowserManager:
         # Wait for supplied public entry-page wording rather than a transient
         # "Loading" splash. These are UI text signals, not dashboard selectors.
         # Unknown pages fail the test instead of being reported as a ready UI.
+        self.stage = 'monitoring_ui_wait'
         await self.page.wait_for_function(
             """() => document.body &&
                 /SolarEdge|Willkommen bei Monitoring|Welcome to Monitoring|Anmelden|Sign in|Log in|Anlagen|Sites|Dashboard|verify you are human|bestätigen.{0,30}Mensch|enter.{0,20}verification code|Bestätigungscode eingeben|security check|Sicherheitsüberprüfung/i.test(document.body.innerText)""",
@@ -112,16 +137,31 @@ class BrowserManager:
         }
 
     async def close(self) -> None:
+        browser, playwright = self.browser, self.playwright
+        self.browser = self.context = self.page = self.playwright = None
+        self.page_crashed = False
         try:
-            if self.browser:
-                await self.browser.close()
+            if browser:
+                await asyncio.wait_for(browser.close(), timeout=10)
+        except Exception as error:
+            LOGGER.warning('Browser shutdown failed: %s', failure_details(error))
         finally:
-            self.browser = self.context = self.page = None
-            if self.playwright:
-                await self.playwright.stop()
-                self.playwright = None
+            if playwright:
+                try:
+                    await asyncio.wait_for(playwright.stop(), timeout=10)
+                except Exception as error:
+                    LOGGER.warning('Browser driver shutdown failed: %s', failure_details(error))
 
-    async def idle(self) -> None:
+    async def idle(self) -> bool:
         """Stop SolarEdge's own SPA timers between widely spaced polls."""
-        if self.page and not self.page.is_closed():
-            await self.page.goto("about:blank", wait_until="domcontentloaded")
+        self.stage = 'browser_idle'
+        try:
+            if self.usable:
+                await self.page.goto("about:blank", wait_until="domcontentloaded", timeout=min(5000,self.config.page_timeout))
+                return True
+            if not self.browser and not self.playwright:
+                return False
+        except Exception as error:
+            LOGGER.warning('Unable to idle browser; resetting it without ending retries: %s', failure_details(error))
+        await self.close()
+        return False

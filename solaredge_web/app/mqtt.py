@@ -100,8 +100,8 @@ class MqttPublisher:
                 {'topic':self.base + '/valid/' + key},
             ], 'availability_mode':'all',
             'device':{'identifiers':[self.device_id], 'name':'SolarEdge Web Scraper',
-                      'manufacturer':'SolarEdge / Community', 'model':'Monitoring Web UI', 'sw_version':'0.2.0'},
-            'origin':{'name':'SolarEdge Web Scraper','sw_version':'0.2.0',
+                      'manufacturer':'SolarEdge / Community', 'model':'Monitoring Web UI', 'sw_version':'0.2.1'},
+            'origin':{'name':'SolarEdge Web Scraper','sw_version':'0.2.1',
                       'support_url':'https://github.com/dr8ecker/solaredge_web'},
         }
         if diagnostic:

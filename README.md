@@ -31,7 +31,7 @@ Die HA-Energiehistorie beginnt mit der Inbetriebnahme. Nachgeholte Tage werden i
 
 ## Stand
 
-**0.2.0**, erste experimentelle Version. Login, Session, echte Tageswerte, Datumwechsel, MQTT und Energie-Dashboard wurden in AMD64-Containern mit separatem Home Assistant geprüft. ARM64 lässt sich bauen; ein nativer ARM64-Lauf und die Installation unter dem echten Supervisor sind noch nicht geprüft.
+**0.2.1**, erste experimentelle Version. Login, Session, echte Tageswerte, Datumwechsel, MQTT und Energie-Dashboard wurden in AMD64-Containern mit separatem Home Assistant geprüft. ARM64 lässt sich bauen; ein nativer ARM64-Lauf und der vollständige Betrieb unter dem echten Supervisor sind noch nicht bestätigt. 0.2.1 behebt einen Abbruch im Browser-Retry und ergänzt sichere Fehlerdiagnose.
 
 - [Konfiguration, Sensoren und Fehlersuche](solaredge_web/README.md)
 - [Energiezähler und Tageswechsel](solaredge_web/ENERGY-DESIGN.md)

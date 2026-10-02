@@ -1,4 +1,4 @@
-# Validierung 0.2.0
+# Validierung 0.2.1
 
 Prüftag: 2026-10-02. Der Live-Test wurde vom Kontoinhaber autorisiert. Zugangsdaten, Session-Dateien, private Messberichte und Home-Assistant-Testkonten stehen nicht im Repository.
 
@@ -6,7 +6,7 @@ Prüftag: 2026-10-02. Der Live-Test wurde vom Kontoinhaber autorisiert. Zugangsd
 
 Parser: Einheiten, Komma/Punkt, Gruppierung, Rundungsauflösung, unparsebare/negative/mehrdeutige Werte. Ledger: Neustart, identische Retries, Tageswechsel mit Restenergie, Korrektur nach unten, begrenztes Nachholen, Lücken, verlorene Daten und Anlagenwechsel. Echtes Chromium: Session-Cookies, Ladezustände, HTTP-Fehler, Abschalten der Webseiten-Timer, Abbruch beim Shutdown, DOM-Discovery, Energie-Tooltips, identische Prozentlabels, Wechsel zurück zu Heute, Null-Produktion und Nennleistung gegenüber tatsächlicher PV-Leistung. Echter Mosquitto: Discovery, retained States, Feldgültigkeit, Wiederverbindung und Shutdown-Availability.
 
-42 automatische Prüfungen bestanden im AMD64-Container. GitHub Actions führt sie mit lokalen/synthetischen Seiten und einem separaten Broker durch. Synthetische Testseiten sind nicht als echte SolarEdge-HTML-Samples zu verstehen.
+48 automatische Prüfungen bestanden im AMD64-Container. Die sechs zusätzlichen Prüfungen in 0.2.1 decken sichere Fehlerdiagnose, defekte/geschlossene Seiten, unterbrochene Navigation sowie Wiederholung trotz gleichzeitigem Navigations- und Idle-Fehler ab. Der normale Live-Abruf besteht weiterhin. GitHub Actions führt die Prüfungen mit lokalen/synthetischen Seiten und einem separaten Broker durch. Synthetische Testseiten sind nicht als echte SolarEdge-HTML-Samples zu verstehen.
 
 ## Live bestätigt
 
@@ -23,7 +23,7 @@ Parser: Einheiten, Komma/Punkt, Gruppierung, Rundungsauflösung, unparsebare/neg
 
 ## Noch nicht bestätigt / Grenzen
 
-- Echte Add-on-Installation unter Home Assistant Supervisor einschließlich dessen AppArmor-Profil und automatischer MQTT-Dienst-Erkennung. Die Schnittstelle ist implementiert; getestet wurde ein manuell konfigurierter Testbroker.
+- Vollständiger Betrieb unter Home Assistant Supervisor einschließlich dessen AppArmor-Profil. Der Nutzer hat Installation und MQTT-Verbindung auf x86-64 bestätigt; beim ersten Browseraufruf trat ein noch nicht eingegrenzter Fehler auf. 0.2.1 behebt den anschließenden Abbruch der Retry-Schleife und ergänzt sichere Ursachen-Diagnose; eine Bestätigung auf diesem Gerät steht aus.
 - Nativer AArch64-Betrieb. ARM64-Build und Chromium-Download funktionieren; QEMU unter AMD64 ist kein belastbarer Chromium-Laufzeitnachweis.
 - Mehrtägiger unbeaufsichtigter Dauerbetrieb und realer Mitternachtswechsel. Die Ledger-Logik ist automatisch geprüft; tatsächliche vergangene Tagesansichten wurden live ausgelesen.
 - Andere Anlagen, Konto-Sprachen, Batterieanlagen und abweichende SolarEdge-Frontends. Vor produktivem Betrieb dort Discovery prüfen.

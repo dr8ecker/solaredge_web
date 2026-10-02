@@ -17,6 +17,7 @@ from .login import SolarEdgeLogin, ManualLoginRequired, AuthenticationError
 from .mqtt import MqttPublisher
 from .navigator import SolarEdgeNavigator
 from .scraper import SolarEdgeScraper
+from .diagnostics import failure_details, runtime_details
 
 LOGGER = logging.getLogger(__name__)
 
@@ -49,14 +50,16 @@ async def run_normal(config, *, once=False):
             await wait_or_stop(stop, 10, health)
 
     async def cycle():
-        if not browser.connected:
+        if not browser.usable:
             await browser.close()
             await browser.start()
         health.update(status='logging_in')
         await login.ensure(browser)
+        browser.stage = 'plant_navigation'
         await navigator.open_dashboard(browser.page)
         health.update(status='scraping', last_page_success=time.time())
         page = browser.page
+        browser.stage = 'dashboard_scrape'
         if config.mode == 'discovery':
             await SolarEdgeDiscovery(config).collect(page)
             # Also capture the normal UI energy view for selector maintenance.
@@ -107,6 +110,7 @@ async def run_normal(config, *, once=False):
 
     task_heartbeat = asyncio.create_task(heartbeat())
     try:
+        LOGGER.info('Browser runtime: %s', runtime_details())
         if publisher:
             ledger = EnergyLedger(config)
             await publisher.start()
@@ -178,17 +182,19 @@ async def run_normal(config, *, once=False):
             except Exception as error:
                 failures += 1
                 LOGGER.warning('Dashboard attempt failed (%s); no zero values published', type(error).__name__)
+                details = {**failure_details(error), 'stage':browser.stage, 'browser_connected':browser.connected,
+                           'page_crashed':browser.page_crashed, **runtime_details()}
+                LOGGER.warning('Dashboard failure details: %s', details)
                 if isinstance(error, ValueError):
                     LOGGER.warning('DOM/date/energy validation failed; use mode=discovery to inspect the current UI')
-                health.update(status='error', consecutive_failures=failures)
+                health.update(status='error', consecutive_failures=failures, last_failure=details)
                 if publisher:
                     publisher.update({'scraper_status':'error'})
                     if failures >= config.max_retries:
                         publisher.unavailable()
                 if once:
                     return 1
-                if browser.connected:
-                    await browser.idle()
+                await browser.idle()
                 await wait_or_stop(stop, retry_delay(failures), health)
             finally:
                 for task in (loading, stopping):

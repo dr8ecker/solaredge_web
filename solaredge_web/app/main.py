@@ -14,6 +14,7 @@ from .config import Config, ConfigurationError
 from .files import write_private_json
 from .health import HealthManager
 from .logging_config import configure_logging
+from .diagnostics import failure_details, runtime_details
 
 LOGGER = logging.getLogger(__name__)
 BACKOFF = (10, 30, 60, 120, 300)
@@ -37,7 +38,7 @@ async def wait_or_stop(stop: asyncio.Event, seconds: float, health: HealthManage
 
 async def load_or_stop(browser: BrowserManager, stop: asyncio.Event) -> dict | None:
     async def attempt():
-        if not browser.connected:
+        if not getattr(browser, 'usable', browser.connected):
             await browser.close()
             await browser.start()
         return await browser.load_monitoring()
@@ -72,7 +73,8 @@ async def run(config: Config, *, once: bool = False) -> int:
             # Windows local development; Linux containers use loop handlers.
             signal.signal(sig, lambda *_: loop.call_soon_threadsafe(stop.set))
     failures = 0
-    LOGGER.info("Phase 1–2 browser test; login, discovery and MQTT are not implemented yet")
+    LOGGER.info("Browser smoke test; no login, dashboard scraping or MQTT in this mode")
+    LOGGER.info('Browser runtime: %s', runtime_details())
     try:
         while not stop.is_set():
             attempt = datetime.now(timezone.utc).isoformat()
@@ -115,12 +117,14 @@ async def run(config: Config, *, once: bool = False) -> int:
                 # Playwright exception messages may contain URLs with tokens or
                 # input values. Log only their class, never repr/traceback.
                 LOGGER.warning("Browser page-load failed (%s); retry with bounded backoff", type(error).__name__)
+                LOGGER.warning('Browser failure details: %s', {**failure_details(error), 'stage':browser.stage, **runtime_details()})
                 health.update(
                     status="error", consecutive_failures=failures,
                     browser_connected=browser.connected,
                 )
                 if once:
                     return 1
+                await browser.idle()
                 await wait_or_stop(stop, retry_delay(failures), health)
     finally:
         try:
