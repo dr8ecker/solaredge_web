@@ -25,3 +25,23 @@ jobs:
             -v "$PWD/solaredge_web/examples:/opt/solaredge/examples:ro" \
             --entrypoint /bin/sh seweb:test \
             -c 'pip install --quiet PyYAML==6.0.3 && python -m unittest discover -s tests -v'
+      - name: Start dedicated Home Assistant for history validation
+        run: |
+          mkdir -p /tmp/seweb-ha /tmp/seweb-private
+          printf 'default_config:\nhomeassistant:\n  time_zone: Europe/Berlin\n  country: DE\n' > /tmp/seweb-ha/configuration.yaml
+          docker run -d --name seweb-history-ha --network seweb-test -v /tmp/seweb-ha:/config ghcr.io/home-assistant/home-assistant:2026.9.4
+          docker run --rm --network seweb-test -v /tmp/seweb-private:/test-data --entrypoint python seweb:test \
+            tools/setup_test_ha.py --url http://seweb-history-ha:8123 --output /test-data/token.json
+      - name: Verify real HA statistics and energy configuration
+        run: |
+          docker run --rm --network seweb-test \
+            -e SEWEB_TEST_HA_URL=ws://seweb-history-ha:8123/api/websocket \
+            -e SEWEB_TEST_HA_TOKEN_FILE=/test-data/token.json \
+            -v /tmp/seweb-private:/test-data:ro \
+            -v "$PWD/solaredge_web/tests:/opt/solaredge/tests:ro" \
+            --entrypoint python seweb:test -m unittest discover -s tests -p test_statistics_ha.py -v
+      - name: Validate notification blueprint without sending messages
+        run: |
+          docker cp blueprints/solaredge-outage.yaml seweb-history-ha:/config/solaredge-outage.yaml
+          docker cp solaredge_web/tests/ha_blueprint_check.py seweb-history-ha:/config/ha_blueprint_check.py
+          docker exec seweb-history-ha python /config/ha_blueprint_check.py

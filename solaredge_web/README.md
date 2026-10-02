@@ -1,4 +1,4 @@
-# SolarEdge Web Scraper 0.2.1
+# SolarEdge Web Scraper 0.3.0
 
 Das Add-on liest mit Playwright Chromium sichtbare SolarEdge-DOM-Werte und reguläre Energie-Tooltips. Scraper und MQTT sind getrennte Komponenten. Keine SolarEdge API, keine eigenen Requests gegen SolarEdge-Endpunkte, kein Modbus, keine OCR und keine Bildauswertung. Die normale Webseite führt ihre üblichen Browserrequests selbst aus.
 
@@ -31,6 +31,7 @@ page_timeout: 30000
 max_retries: 5
 site_timezone: Europe/Berlin
 history_days: 7
+history_import: true
 ```
 
 | Option | Bedeutung |
@@ -45,6 +46,7 @@ history_days: 7
 | `page_timeout` | Pro Browseraktion, Millisekunden, 5000–120000 |
 | `max_retries` | Fehlversuche bis SolarEdge-Sensoren unavailable werden, 1–10 |
 | `site_timezone` | Anlagenzeitzone; muss zu SolarEdges Heute-Datum passen |
+| `history_import` | Tagesgenaue HA-Statistiken über Supervisor importieren; Standard true |
 | `history_days` | Maximal nachgeholte Ausfalltage, 1–31; Standard 7 |
 | `login_url`, `browser_path` | Normalerweise leer; nur für bewusste Anpassungen |
 
@@ -54,7 +56,7 @@ MQTT-Zugangsdaten gehören zum Broker und können vom Home-Assistant-Login abwei
 
 Das Add-on lädt die gespeicherte Session oder meldet sich einmal regulär an, wählt die Anlage und öffnet **Heute/Tag → Energie**. Es prüft das Datum und liest Energie aus den Produktions-/Verbrauchskarten und sichtbaren Hover-Tooltips. Gerundete Prozentanteile werden nicht in kWh umgerechnet.
 
-Die Sensoren erscheinen automatisch. Der erste Gesamtzählerstand enthält den bereits angezeigten aktuellen Tageswert; Home Assistant nutzt ihn als statistischen Ausgangspunkt. Historie vor Inbetriebnahme wird nicht rückdatiert importiert.
+Die Sensoren erscheinen automatisch. Der erste Gesamtzählerstand enthält den bereits angezeigten aktuellen Tageswert; Home Assistant nutzt ihn als statistischen Ausgangspunkt. Der neue separate Historienimport übernimmt vorhandene Tage einschließlich des bekannten Tagesstands vor dem ersten Abruf. [Einrichtung](HISTORY.md).
 
 Nach jedem Abruf öffnet der Browser `about:blank`, um SolarEdges Hintergrundtimer zu stoppen. Nach 30 Minuten wird die Monitoring-Seite im vorhandenen Kontext erneut geöffnet. Ein erneuter Login erfolgt nur bei ungültiger Session.
 
@@ -79,7 +81,32 @@ Alle folgenden Standard-IDs beginnen mit `sensor.solaredge_`; bei Namenskonflikt
 | `scraper_status`, `scraper_response_time` | Status und Abrufdauer in Sekunden |
 | `energy_gap_count` | Fehlende Tage außerhalb des Nachholfensters |
 
-Für das Energie-Dashboard nur die ersten drei Zähler zuordnen. Sie besitzen `energy`, `total` und `kWh`, ohne regelmäßige Resets. Den Gesamt-Hausverbrauch nicht zusätzlich als einzelnes Gerät zählen. Ohne Import-/Export-Label bleibt der jeweilige Leistungssensor unavailable, statt die Gegenrichtung als erfundene Null zu veröffentlichen. Die Energiewerte stammen davon unabhängig aus Tages-Tooltips. Keine Batteriesensoren. Details: [ENERGY-DESIGN.md](ENERGY-DESIGN.md).
+Für die tagesgenaue Zuordnung im Energie-Dashboard die drei importierten **Tagesgenau**-Quellen auswählen; [Anleitung](HISTORY.md). Die ersten drei MQTT-Gesamtzähler bleiben eine Alternative mit Zuordnung zum Abrufzeitpunkt. Sie besitzen `energy`, `total` und `kWh`, ohne regelmäßige Resets. Den Gesamt-Hausverbrauch nicht zusätzlich als einzelnes Gerät zählen. Ohne Import-/Export-Label bleibt der jeweilige Leistungssensor unavailable, statt die Gegenrichtung als erfundene Null zu veröffentlichen. Die Energiewerte stammen davon unabhängig aus Tages-Tooltips. Keine Batteriesensoren. Details: [ENERGY-DESIGN.md](ENERGY-DESIGN.md).
+
+## Tagesbilanz, Datenzustand und Historie
+
+Ab 0.3.0 kommen zwölf Sensoren hinzu; insgesamt werden 30 Sensoren veröffentlicht:
+
+| Sensor | Bedeutung |
+| --- | --- |
+| `consumption_energy_today` | Hausverbrauch heute, kWh |
+| `grid_import_energy_today` | Netzbezug heute, kWh |
+| `grid_export_energy_today` | Einspeisung heute, kWh |
+| `self_consumption_energy_today` | Selbst genutzte PV-Energie heute, kWh |
+| `autarky_today` | PV-Eigenverbrauch / Hausverbrauch × 100 |
+| `self_consumption_ratio_today` | PV-Eigenverbrauch / PV-Erzeugung × 100 |
+| `energy_date` | Datum der ausgelesenen Tageswerte |
+| `data_freshness` | `fresh`, `updating`, `retrying`, `stale` oder ein konkreter Fehlerzustand |
+| `scraper_poll_interval` | Eingestelltes Abrufintervall in Sekunden |
+| `scraper_stale_after` | Warnschwelle für das Datenalter in Sekunden |
+| `history_import_status` | `ok`, `waiting`, `error`, `disabled` oder `supervisor_required` |
+| `history_last_success` | Zeitpunkt des letzten bestätigten Historienimports |
+
+Die Tageswerte stammen aus derselben bereits ausgelesenen Energieansicht. Ein Nenner von null ergibt keinen gültigen Prozentsatz; dieser Sensor bleibt dann unavailable. Am lokalen Tageswechsel werden die Tagesanzeigen bis zum nächsten Abruf unavailable, sodass der Vortagswert nicht als Heute erscheint. Die Gesamtzähler laufen weiter.
+
+Der Datenzustand wird auch zwischen Abrufen geprüft. Die Altersschwelle ist mindestens 15 Minuten oder drei Abrufintervalle; beim Standard also 90 Minuten. Ein einzelner Fehler führt zunächst zu `retrying`, bestätigte Anmeldungshindernisse werden direkt kenntlich gemacht. [Optionale Handy-Benachrichtigung](../blueprints/README.md).
+
+`history_import: true` verwendet den internen HA-Zugang des Supervisors, ohne weiteren Benutzer-Token. Dafür enthält die Add-on-Beschreibung `homeassistant_api: true`. Dieser Zugriff betrifft Home Assistant, nicht SolarEdge. Beim separaten Docker-Betrieb ohne Supervisor `history_import: false` setzen. Details zu Tageszuordnung, Migration, Stundenauflösung und Sicherungen: [HISTORY.md](HISTORY.md).
 
 ## Discovery und Debugging
 

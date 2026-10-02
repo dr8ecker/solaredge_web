@@ -29,3 +29,13 @@ Parser: Einheiten, Komma/Punkt, Gruppierung, Rundungsauflösung, unparsebare/neg
 - Andere Anlagen, Konto-Sprachen, Batterieanlagen und abweichende SolarEdge-Frontends. Vor produktivem Betrieb dort Discovery prüfen.
 - MFA/CAPTCHA: Pausenlogik statt Umgehung; kein eingebauter interaktiver Webbrowser.
 - Statistik beginnt bei Inbetriebnahme; MQTT importiert keine rückdatierten Statistiken.
+
+## Ergänzungen in 0.3.0
+
+- 13 zusätzliche Unit-Tests: Tagesbilanz/Quotienten, echte Nullwerte, fehlende Nenner, Alterung ohne neuen Abruf, Mitternachtsgültigkeit, Ledger-Übernahme, Ausfälle, späte Korrekturen, Kompaktierung sowie 23-/25-Stunden-Tage.
+- 61 Prüfungen einschließlich echtem Chromium und isoliertem Mosquitto bestanden. Ein zusätzlicher opt-in Test verwendet echtes Home Assistant 2026.9.4: wiederholter Import ohne Doppelzählung, ursprüngliche Tageszuordnung, spätere Korrekturen ohne falsche Folgetage und erfolgreiche Energie-Dashboard-Validierung aller drei Quellen.
+- Blueprint, Automation und beide Benachrichtigungsaktionen gegen HA-Schemas geprüft. Warnungs- und Erholungsvorlagen mit zehn Zustandskombinationen geprüft; es wurden keine Handy-Nachrichten versendet.
+- Erweiterte Dashboard-Karten mit Beispieldaten im Browser geprüft, einschließlich hellem/dunklem Theme, schmaler Ansicht, fehlenden Werten und überaltertem Abruf. Keine Browserfehler.
+- Ein erneuter realer SolarEdge-Abruf mit gespeicherter Session, neuen Tageswerten, MQTT und anschließendem Statistikimport in die getrennte HA-Testinstanz war erfolgreich.
+
+Der Live-Importtest verwendet einen privaten HA-Testzugang direkt zum Test-Core. Die automatische Authentifizierung über den echten Supervisor-Proxy muss nach dem Update auf dem Nutzergerät bestätigt werden. Die Route und Berechtigung entsprechen der offiziellen HA-Dokumentation. Die Stundenverteilung nicht beobachteter Zeiträume bleibt unbekannt; der Import ordnet diese Mengen ausschließlich dem korrekten Tag zu.

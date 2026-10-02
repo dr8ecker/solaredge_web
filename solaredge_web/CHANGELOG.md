@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0
+
+- Tageswerte für Hausverbrauch, Netzbezug, Einspeisung und PV-Eigenverbrauch sowie Autarkie und Eigenverbrauchsquote; keine zusätzlichen SolarEdge-Abfragen dafür.
+- Tageswerte werden nach lokalem Mitternachtswechsel bis zum nächsten Abruf unavailable. Quotienten ohne gültigen Nenner bleiben unavailable.
+- Datenzustand mit einer vom Abrufintervall abhängigen Altersschwelle, auch zwischen Abrufen; optionale Handy-Benachrichtigung als HA-Blueprint.
+- Tagesgenauer Historienimport über den internen HA-Supervisor-Zugang. Eigene Statistikquellen, idempotente Wiederholungen und korrekte Zuordnung von Ausfalltagen, späten Korrekturen und Zeitumstellungen.
+- Bestehende Energie-Ledger werden um Stundenbeobachtungen ergänzt; Gesamtzähler und MQTT-IDs bleiben erhalten. Unbekannte Stundenverteilungen nachgeholter Tage werden nicht erfunden.
+- Dashboard um Tagesbilanz, Prozentsätze, Datenzustand, dynamisches Abrufintervall und Importdiagnose erweitert.
+- Nach dem Update die **Tagesgenau**-Quellen einmal im Energie-Dashboard auswählen: [Umstellungsanleitung](HISTORY.md). Die normale Dashboard-Karte wird weiterhin als YAML eingefügt.
+
 ## 0.2.1
 
 - Browser-Idle-Fehler beenden den Retry-Ablauf nicht mehr. Defekte/geschlossene Seiten werden mit neuem Browser wiederholt.

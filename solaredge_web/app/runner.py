@@ -10,7 +10,8 @@ from zoneinfo import ZoneInfo
 
 from .browser import BrowserManager, RateLimited
 from .discovery import SolarEdgeDiscovery
-from .energy import EnergyLedger, LedgerError
+from .energy import EnergyLedger, LedgerError, daily_values
+from .statistics import StatisticsImporter, StatisticsError
 from .files import write_private_json
 from .health import HealthManager
 from .login import SolarEdgeLogin, ManualLoginRequired, AuthenticationError
@@ -41,6 +42,7 @@ async def run_normal(config, *, once=False):
     publisher = MqttPublisher(config) if config.mode == 'normal' else None
     ledger = None
     failures = 0
+    importer = StatisticsImporter(config)
 
     async def heartbeat():
         while not stop.is_set():
@@ -82,6 +84,9 @@ async def run_normal(config, *, once=False):
             raise ValueError('SolarEdge Today differs from site_timezone; no energy published')
         live = await scraper.live(page)
         samples = [await scraper.day_energy(page, today)]
+        observed_at = datetime.now(timezone.utc)
+        if observed_at.astimezone(ZoneInfo(config.site_timezone)).date() != today:
+            raise ValueError('Day changed during scrape; retry before updating counters')
         required = set(ledger.needed_days(today))
         if required:
             day = today
@@ -90,9 +95,9 @@ async def run_normal(config, *, once=False):
                 await scraper.previous_day(page, day)
                 if day in required:
                     samples.append(await scraper.day_energy(page, day))
-        totals, warnings = ledger.apply(samples)
+        totals, warnings = ledger.apply(samples, observed_at=observed_at)
         values = {k:v for k,v in live.values.items() if k != 'scraped_at'}
-        values.update(totals, energy_today=float(samples[0].values['pv_energy']),
+        values.update(totals, **daily_values(samples[0]), energy_date=today.isoformat(),
                       energy_gap_count=len(ledger.state['gaps']))
         for warning in warnings:
             LOGGER.warning('%s', warning)
@@ -114,6 +119,7 @@ async def run_normal(config, *, once=False):
         if publisher:
             ledger = EnergyLedger(config)
             await publisher.start()
+            publisher.update({'history_import_status': 'waiting' if config.history_import else 'disabled'})
         while not stop.is_set():
             started = time.monotonic()
             attempt = datetime.now(timezone.utc).isoformat()
@@ -130,6 +136,7 @@ async def run_normal(config, *, once=False):
                 failures = 0
                 success = datetime.now(timezone.utc).isoformat()
                 if publisher:
+                    await browser.idle()
                     values.update(scraper_last_success=success, scraper_last_attempt=attempt,
                                   scraper_status='connected' if publisher.connected else 'mqtt_disconnected',
                                   scraper_response_time=round(time.monotonic()-started, 2))
@@ -139,6 +146,18 @@ async def run_normal(config, *, once=False):
                               mqtt_connected=publisher.connected if publisher else None,
                               browser_connected=browser.connected)
                 LOGGER.info('Dashboard scrape complete; energy ledger saved' if publisher else 'Discovery complete; private DOM reports saved')
+                if publisher:
+                    # A HA import outage must not stop normal MQTT publication or
+                    # invalidate the successfully scraped SolarEdge values.
+                    try:
+                        result = await asyncio.to_thread(importer.sync, ledger.state)
+                        imported = {'history_import_status': result}
+                        if result == 'ok':
+                            imported['history_last_success'] = datetime.now(timezone.utc).isoformat()
+                        publisher.update(imported)
+                    except StatisticsError as error:
+                        publisher.update({'history_import_status': 'error'})
+                        LOGGER.warning('%s; MQTT values preserved, history retries next cycle', str(error))
                 # --once must confirm MQTT delivery, not just enqueue packets.
                 if once and publisher:
                     deadline = time.monotonic() + 15
@@ -151,7 +170,6 @@ async def run_normal(config, *, once=False):
                     await asyncio.to_thread(packet.wait_for_publish, 10)
                 if once or config.mode == 'discovery':
                     return 0
-                await browser.idle()
                 await wait_or_stop(stop, config.poll_interval, health)
             except RateLimited:
                 LOGGER.warning('SolarEdge UI rate limit; waiting at least 30 minutes')

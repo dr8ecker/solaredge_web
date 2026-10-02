@@ -1,5 +1,5 @@
 # Als eine manuelle Karte einfügen, nicht in configuration.yaml.
-# Benötigt: Mushroom, mini-graph-card, card-mod.
+# Benötigt: Add-on ab 0.3.0, Mushroom, mini-graph-card, card-mod.
 type: custom:mod-card
 card:
   type: vertical-stack
@@ -45,16 +45,16 @@ card:
       alignment: start
       chips:
         - type: template
-          entity: sensor.solaredge_scraper_status
+          entity: sensor.solaredge_data_freshness
           icon: >-
             {% set s = states(entity) %}
-            {{ 'mdi:check-circle' if s == 'connected' else 'mdi:sync' if s == 'scraping' else 'mdi:alert-circle-outline' }}
+            {{ 'mdi:check-circle' if s == 'fresh' else 'mdi:sync' if s == 'updating' else 'mdi:alert-circle-outline' }}
           icon_color: >-
             {% set s = states(entity) %}
-            {{ '#14b8a6' if s == 'connected' else '#60a5fa' if s == 'scraping' else '#f6b44b' }}
+            {{ '#14b8a6' if s == 'fresh' else '#60a5fa' if s == 'updating' else '#f6b44b' }}
           content: >-
             {% set s = states(entity) %}
-            {% set labels = {'connected': 'Abruf OK', 'scraping': 'Wird abgerufen', 'error': 'Abruffehler', 'login_required': 'Login erforderlich', 'manual_login_required': 'Login bestätigen', 'mqtt_disconnected': 'MQTT getrennt', 'rate_limited': 'Abruf pausiert', 'energy_ledger_error': 'Zähler prüfen', 'offline': 'Offline', 'unavailable': 'Nicht verfügbar', 'unknown': 'Noch keine Daten'} %}
+            {% set labels = {'fresh': 'Daten aktuell', 'updating': 'Wird abgerufen', 'waiting': 'Warte auf Daten', 'retrying': 'Neuer Versuch', 'stale': 'Daten veraltet', 'error': 'Abruffehler', 'login_required': 'Login erforderlich', 'manual_login_required': 'Login bestätigen', 'mqtt_disconnected': 'MQTT getrennt', 'rate_limited': 'Abruf pausiert', 'energy_ledger_error': 'Zähler prüfen', 'offline': 'Offline', 'unavailable': 'Nicht verfügbar', 'unknown': 'Noch keine Daten'} %}
             {{ labels.get(s, 'Status prüfen') }}
           tap_action:
             action: more-info
@@ -72,6 +72,79 @@ card:
       card_mod:
         style: |
           :host, ha-card { padding: 4px 16px 16px; }
+    - type: grid
+      columns: 2
+      square: false
+      cards:
+        - type: custom:mushroom-entity-card
+          entity: sensor.solaredge_consumption_energy_today
+          name: Haus heute
+          icon: mdi:home-lightning-bolt-outline
+          icon_color: '#36bcc8'
+          primary_info: state
+          secondary_info: name
+          layout: horizontal
+          tap_action:
+            action: more-info
+        - type: custom:mushroom-entity-card
+          entity: sensor.solaredge_self_consumption_energy_today
+          name: PV selbst genutzt
+          icon: mdi:home-import-outline
+          icon_color: '#f6b44b'
+          primary_info: state
+          secondary_info: name
+          layout: horizontal
+          tap_action:
+            action: more-info
+        - type: custom:mushroom-entity-card
+          entity: sensor.solaredge_grid_import_energy_today
+          name: Netzbezug heute
+          icon: mdi:transmission-tower-import
+          icon_color: '#60a5fa'
+          primary_info: state
+          secondary_info: name
+          layout: horizontal
+          tap_action:
+            action: more-info
+        - type: custom:mushroom-entity-card
+          entity: sensor.solaredge_grid_export_energy_today
+          name: Einspeisung heute
+          icon: mdi:transmission-tower-export
+          icon_color: '#14b8a6'
+          primary_info: state
+          secondary_info: name
+          layout: horizontal
+          tap_action:
+            action: more-info
+    - type: custom:mushroom-chips-card
+      alignment: center
+      chips:
+        - type: template
+          entity: sensor.solaredge_autarky_today
+          icon: mdi:home-percent-outline
+          icon_color: '#14b8a6'
+          content: >-
+            {% set n = states(entity) %}
+            Autarkie {{ (('%.1f' | format(n | float)) | replace('.', ',')) ~ ' %' if is_number(n) else '—' }}
+          tap_action:
+            action: more-info
+        - type: template
+          entity: sensor.solaredge_self_consumption_ratio_today
+          icon: mdi:solar-power-variant
+          icon_color: '#f6b44b'
+          content: >-
+            {% set n = states(entity) %}
+            Eigenverbrauch {{ (('%.1f' | format(n | float)) | replace('.', ',')) ~ ' %' if is_number(n) else '—' }}
+          tap_action:
+            action: more-info
+      card_mod:
+        style: |
+          :host, ha-card { padding: 8px 8px 12px; }
+    - type: markdown
+      content: '#### Leistung beim letzten Abruf'
+      card_mod:
+        style: |
+          :host, ha-card { background: transparent; border: 0; box-shadow: none; }
     - type: grid
       columns: 2
       square: false
@@ -153,12 +226,25 @@ card:
         {% if stamp is not none %}
           {% set age = ((as_timestamp(now()) - stamp) / 60) | int %}
           **Datenstand:** {{ stamp | timestamp_custom('%d.%m. · %H:%M', true) }}
-          {% if age > 75 %} · ⚠ Seit über 75 Min. kein erfolgreicher Abruf.{% endif %}
+          {% set limit = states('sensor.solaredge_scraper_stale_after') | float(5400) / 60 %}
+          {% if age > limit %} · ⚠ Daten älter als {{ limit | int }} Min.{% endif %}
         {% else %}
           **Datenstand:** Noch kein erfolgreicher Abruf verfügbar.
         {% endif %}
 
-        Momentaufnahmen · Standardabruf alle 30 Min.
+        {% set interval = states('sensor.solaredge_scraper_poll_interval') %}
+        Momentaufnahmen · {{ 'Abruf alle ' ~ ('%g' | format(interval | float / 60)) ~ ' Min.' if is_number(interval) else 'Intervall nicht verfügbar' }}
+
+        {% if is_state('sensor.solaredge_history_import_status', 'error') %}
+        ⚠ Historienimport gestört. Aktuelle Sensorwerte werden weiter übertragen.
+        {% elif is_state('sensor.solaredge_history_import_status', 'supervisor_required') %}
+        ⚠ Historienimport benötigt den Zugriff auf Home Assistant über den Supervisor.
+        {% endif %}
+
+        {% set gaps = states('sensor.solaredge_energy_gap_count') %}
+        {% if is_number(gaps) and gaps | int > 0 %}
+        ⚠ {{ gaps | int }} Energietage fehlen. Die Gesamtbilanz ist unvollständig.
+        {% endif %}
       card_mod:
         style:
           .: |

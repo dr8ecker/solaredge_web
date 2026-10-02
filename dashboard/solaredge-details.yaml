@@ -1,4 +1,4 @@
-# Optionale zweite manuelle Karte: zusammen mit der Übersicht alle 18 Sensoren.
+# Optionale zweite manuelle Karte: zusammen mit der Übersicht alle Sensoren ab Add-on 0.3.0.
 type: entities
 title: SolarEdge · Zähler & Details
 show_header_toggle: false
@@ -23,6 +23,20 @@ entities:
     icon: mdi:transmission-tower-export
   - type: section
     label: Anlage & Datenquelle
+  - entity: sensor.solaredge_energy_date
+    name: Datum der Tageswerte
+  - entity: sensor.solaredge_data_freshness
+    name: Datenzustand
+    icon: mdi:check-network-outline
+  - entity: sensor.solaredge_scraper_poll_interval
+    name: Abrufintervall
+  - entity: sensor.solaredge_scraper_stale_after
+    name: Warnschwelle Datenalter
+  - entity: sensor.solaredge_history_import_status
+    name: Historienimport
+    icon: mdi:database-clock-outline
+  - entity: sensor.solaredge_history_last_success
+    name: Letzter Historienimport
   - entity: sensor.solaredge_site_status
     name: Anlagenstatus
     icon: mdi:solar-panel-large

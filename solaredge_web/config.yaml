@@ -1,5 +1,5 @@
 name: SolarEdge Web Scraper
-version: 0.2.1
+version: 0.3.0
 slug: solaredge_web
 description: SolarEdge-Weboberfläche mit persistenten Energiezählern und MQTT für
   Home Assistant
@@ -9,6 +9,7 @@ arch:
 startup: application
 boot: auto
 init: true
+homeassistant_api: true
 stage: experimental
 timeout: 30
 services:
@@ -34,6 +35,7 @@ options:
   mqtt_discovery_prefix: homeassistant
   site_timezone: Europe/Berlin
   history_days: 7
+  history_import: true
 schema:
   solar_edge_username: str
   solar_edge_password: password
@@ -55,4 +57,5 @@ schema:
   mqtt_discovery_prefix: str
   site_timezone: str
   history_days: int(1,31)
+  history_import: bool
 url: https://github.com/dr8ecker/solaredge_web

@@ -40,3 +40,4 @@ def configure_logging(config) -> None:
     # Avoid verbose protocol output from dependencies even in debug mode.
     logging.getLogger("playwright").setLevel(logging.WARNING)
     logging.getLogger("asyncio").setLevel(logging.WARNING)
+    logging.getLogger("websocket").setLevel(logging.WARNING)

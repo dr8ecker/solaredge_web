@@ -1,0 +1,96 @@
+blueprint:
+  name: SolarEdge · Daten fehlen oder Historienimport gestört
+  description: >-
+    Meldet einen anhaltenden Daten- oder Importfehler einmal an ein ausgewähltes
+    Handy mit Home-Assistant-App. Nach erfolgreicher Erholung folgt optional
+    eine Entwarnung. Der Datenzustand berücksichtigt das Abrufintervall des
+    Add-ons ab Version 0.3.0. Ein einzelner fehlender Netzrichtungssensor
+    löst keine Meldung aus. Diese Automation fragt SolarEdge nicht ab.
+  domain: automation
+  source_url: https://github.com/dr8ecker/solaredge_web/blob/main/blueprints/solaredge-outage.yaml
+  input:
+    freshness_entity:
+      name: SolarEdge-Datenzustand
+      default: sensor.solaredge_data_freshness
+      selector:
+        entity:
+          filter:
+            domain: sensor
+    history_entity:
+      name: SolarEdge-Historienimport
+      default: sensor.solaredge_history_import_status
+      selector:
+        entity:
+          filter:
+            domain: sensor
+    notify_device:
+      name: Handy für Benachrichtigungen
+      selector:
+        device:
+          filter:
+            integration: mobile_app
+    delay_minutes:
+      name: Fehler muss so lange bestehen
+      description: Zusätzliche Wartezeit nach erkannter Störung. Bei alten Daten greift vorher bereits die altersabhängige Warnschwelle.
+      default: 5
+      selector:
+        number:
+          min: 1
+          max: 60
+          unit_of_measurement: min
+          mode: box
+    notify_recovery:
+      name: Entwarnung senden
+      default: true
+      selector:
+        boolean:
+trigger_variables:
+  freshness_entity: !input freshness_entity
+  history_entity: !input history_entity
+variables:
+  freshness_entity: !input freshness_entity
+  history_entity: !input history_entity
+  notify_recovery: !input notify_recovery
+triggers:
+  - trigger: template
+    value_template: >-
+      {{ states(freshness_entity) in ['stale', 'error', 'login_required',
+         'manual_login_required', 'energy_ledger_error', 'rate_limited',
+         'offline', 'unavailable', 'unknown']
+         or states(history_entity) in ['error', 'supervisor_required'] }}
+    for:
+      minutes: !input delay_minutes
+actions:
+  - device_id: !input notify_device
+    domain: mobile_app
+    type: notify
+    title: SolarEdge · Bitte prüfen
+    message: >-
+      {% set labels = {'stale': 'Daten sind zu alt', 'error': 'Abruf fehlgeschlagen',
+        'login_required': 'Anmeldung erforderlich', 'manual_login_required': 'Anmeldung manuell bestätigen',
+        'energy_ledger_error': 'Energiezähler prüfen', 'rate_limited': 'SolarEdge begrenzt die Abrufe',
+        'offline': 'Add-on offline', 'unavailable': 'Add-on oder MQTT nicht erreichbar',
+        'unknown': 'Noch keine Daten', 'fresh': 'Daten aktuell', 'updating': 'Abruf läuft',
+        'retrying': 'Abruf wird wiederholt', 'waiting': 'Warte auf Daten'} %}
+      {{ labels.get(states(freshness_entity), 'Datenzustand prüfen') }}.
+      {% if states(history_entity) in ['error', 'supervisor_required'] %}
+      Der Import ins Energie-Dashboard ist gestört; bitte Add-on-Protokoll prüfen.
+      {% endif %}
+    data:
+      tag: "solaredge-{{ freshness_entity }}"
+  - wait_template: >-
+      {{ is_state(freshness_entity, 'fresh')
+         and states(history_entity) not in ['error', 'supervisor_required', 'unknown', 'unavailable'] }}
+  - if:
+      - condition: template
+        value_template: "{{ notify_recovery }}"
+    then:
+      - device_id: !input notify_device
+        domain: mobile_app
+        type: notify
+        title: SolarEdge · Wieder verfügbar
+        message: Der Abruf funktioniert wieder. Neue SolarEdge-Werte stehen bereit.
+        data:
+          tag: "solaredge-{{ freshness_entity }}"
+mode: single
+max_exceeded: silent

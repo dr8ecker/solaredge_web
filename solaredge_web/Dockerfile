@@ -17,7 +17,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* /root/.cache
 
 # Keep version labels below dependencies so updates can reuse Chromium layers.
-ARG BUILD_VERSION=0.2.1
+ARG BUILD_VERSION=0.3.0
 ARG BUILD_ARCH=amd64
 LABEL io.hass.version="${BUILD_VERSION}" \
       io.hass.type="app" \

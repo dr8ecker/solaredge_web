@@ -51,6 +51,7 @@ class Config:
     max_retries: int = 5
     site_timezone: str = "Europe/Berlin"
     history_days: int = 7
+    history_import: bool = True
     data_dir: Path = field(default=Path("/data/runtime"), repr=False)
 
     @property

@@ -15,27 +15,29 @@ Installierbares Add-on mit Chromium, regulärem SolarEdge-Login, persistenten En
 
 ## Energie-Dashboard
 
-Unter **Einstellungen → Dashboards → Energie** diese Sensoren zuordnen:
+Ab **0.3.0** importiert das Add-on Tageswerte in eigene HA-Statistikquellen. Nach einem erfolgreichen Abruf zeigt der Sensor **Historienimport** `ok`. Unter **Einstellungen → Dashboards → Energie** diese Quellen auswählen:
 
-| Verwendung | Standard-Entity-ID |
+| Verwendung | Statistikname, ergänzt um deinen Anlagennamen |
 | --- | --- |
-| Solarerzeugung | `sensor.solaredge_pv_energy_total` |
-| Stromnetzbezug | `sensor.solaredge_grid_import_energy_total` |
-| Stromnetzeinspeisung | `sensor.solaredge_grid_export_energy_total` |
+| Solarerzeugung | SolarEdge PV-Erzeugung · Tagesgenau |
+| Stromnetzbezug | SolarEdge Netzbezug · Tagesgenau |
+| Stromnetzeinspeisung | SolarEdge Einspeisung · Tagesgenau |
 
-Die Zähler besitzen `device_class: energy`, `state_class: total` und die Einheit kWh. Home Assistant kann bei bestehenden Namen einen Suffix hinzufügen. Nicht die Tagesanzeige oder einen Leistungssensor als Energiezähler verwenden. Der Hausverbrauch ergibt sich aus Erzeugung, Bezug und Einspeisung; den Gesamtverbrauch nicht zusätzlich als einzelnes Gerät hinzufügen.
+Bei bestehenden Installationen die bisherigen SolarEdge-Quellen durch diese Statistiken ersetzen. Pro Rolle genau eine Quelle verwenden. Der Hausverbrauch ergibt sich aus Erzeugung, Bezug und Einspeisung. [Umstellung, Zeitauflösung und Grenzen](solaredge_web/HISTORY.md).
 
-Alle **30 Minuten** ein Abruf genügt für Energiezuwächse; Leistungswerte bleiben Momentaufnahmen. Zwischen Abrufen wird die Webseite entladen, damit ihre eigenen Aktualisierungstimer keine zusätzliche Last erzeugen. Browser und Session bleiben erhalten.
+Die bisherigen MQTT-Gesamtzähler bleiben als Alternative erhalten (`sensor.solaredge_pv_energy_total`, `sensor.solaredge_grid_import_energy_total`, `sensor.solaredge_grid_export_energy_total`). Ihre Zuwächse werden weiterhin zum Abrufzeitpunkt erfasst. Tagesanzeigen und Leistungssensoren sind keine Energie-Summenquellen.
 
-Die HA-Energiehistorie beginnt mit der Inbetriebnahme. Nachgeholte Tage werden im aktuellen Abruf übernommen, nicht rückwirkend in die ursprünglichen Stunden geschrieben. Drei-Tages- und Wochenansichten werden nicht wiederholt addiert.
+Alle **30 Minuten** ein Abruf genügt für Energiezuwächse; Leistungswerte bleiben Momentaufnahmen. Zwischen Abrufen wird die Webseite entladen, damit ihre eigenen Aktualisierungstimer keine zusätzliche Last erzeugen. Nachgeholte Tagesmengen erscheinen mit den neuen Statistikquellen am ursprünglichen Tag. Die genaue Stundenverteilung vor einem Ausfall lässt sich aus Tageswerten nicht rekonstruieren.
 
 ## Dashboard-Karten
 
-[Fertiges SolarEdge-Dashboard-Modul mit Einfüge-Anleitung](dashboard/README.md): große Tageserzeugung, Leistungskacheln, 24-Stunden-Verlauf und Abrufstatus. Eine optionale Detailkarte ergänzt alle Energiezähler und Diagnosewerte. Nutzt die vorhandenen HACS-Karten Mushroom, mini-graph-card und card-mod.
+[Fertiges SolarEdge-Dashboard-Modul mit Einfüge-Anleitung](dashboard/README.md): Tagesbilanz, Autarkie, Eigenverbrauchsquote, Leistungskacheln, 24-Stunden-Verlauf und Datenzustand. Eine optionale Detailkarte ergänzt alle Energiezähler und Diagnosewerte. Nutzt die vorhandenen HACS-Karten Mushroom, mini-graph-card und card-mod.
+
+[Optionale Ausfallmeldung aufs Handy](blueprints/README.md): wählbares Gerät, Wartezeit und Entwarnung.
 
 ## Stand
 
-**0.2.1**, erste experimentelle Version. Login, Session, echte Tageswerte, Datumwechsel, MQTT und Energie-Dashboard wurden in AMD64-Containern mit separatem Home Assistant geprüft. Der Nutzer hat auf seinem x86-64-Home-Assistant erfolgreiche MQTT-Verbindung, Chromium-Start, Login und einen vollständigen Abruf mit gespeichertem Energie-Ledger bestätigt. ARM64 lässt sich bauen; ein nativer ARM64-Lauf und mehrtägiger Dauerbetrieb sind noch nicht bestätigt. 0.2.1 behebt einen Abbruch im Browser-Retry und ergänzt sichere Fehlerdiagnose.
+**0.3.0**, experimentelle Version. Login, Session, echte Tageswerte, Datumwechsel, MQTT und Energie-Dashboard wurden in AMD64-Containern mit separatem Home Assistant geprüft. Der Nutzer hat auf seinem x86-64-Home-Assistant erfolgreiche MQTT-Verbindung, Chromium-Start, Login und einen vollständigen Abruf mit gespeichertem Energie-Ledger bestätigt. ARM64 lässt sich bauen; ein nativer ARM64-Lauf und mehrtägiger Dauerbetrieb sind noch nicht bestätigt. Die neuen Tageswerte und der Historienimport wurden zusätzlich mit echtem SolarEdge-Abruf und einer getrennten HA-Testinstanz geprüft.
 
 - [Konfiguration, Sensoren und Fehlersuche](solaredge_web/README.md)
 - [Energiezähler und Tageswechsel](solaredge_web/ENERGY-DESIGN.md)

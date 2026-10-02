@@ -18,5 +18,6 @@
   "mqtt_tls": false,
   "mqtt_discovery_prefix": "homeassistant",
   "site_timezone": "Europe/Berlin",
-  "history_days": 7
+  "history_days": 7,
+  "history_import": true
 }

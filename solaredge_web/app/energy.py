@@ -3,8 +3,9 @@
 import copy
 import hashlib
 import json
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 
 from .files import write_private_json
 
@@ -27,7 +28,7 @@ class EnergyLedger:
         self.backup = config.data_dir / 'energy_ledger.backup.json'
         self.marker = config.data_dir / 'energy_initialized.json'
         self.state = {'version':1, 'identity':identity(config), 'days':{},
-                      'carry':{k:'0' for k in ENERGY_KEYS}, 'last_day':None, 'gaps':[]}
+                      'carry':{k:'0' for k in ENERGY_KEYS}, 'last_day':None, 'gaps':[], 'hours':{}}
         if self.path.exists():
             try:
                 self.state = self.validate(json.loads(self.path.read_text(encoding='utf8')))
@@ -55,6 +56,26 @@ class EnergyLedger:
                 number = Decimal(value)
                 if not number.is_finite() or number < 0:
                     raise ValueError('Invalid daily quantity')
+        # Older ledgers have no observations. Keep their totals and import those
+        # days at day end; never invent an hourly production profile.
+        state.setdefault('hours', {})
+        zone = ZoneInfo(self.config.site_timezone)
+        for day, hours in state['hours'].items():
+            if day not in state['days']:
+                raise ValueError('Orphaned hourly observations')
+            previous = {key: Decimal(0) for key in ENERGY_KEYS}
+            for stamp, values in sorted(hours.items()):
+                moment = datetime.fromisoformat(stamp)
+                if (moment.tzinfo is None or moment.utcoffset() != timedelta(0)
+                    or moment.minute or moment.second or moment.microsecond
+                    or moment.astimezone(zone).date().isoformat() != day
+                    or set(values) != set(ENERGY_KEYS)):
+                    raise ValueError('Invalid hourly observation')
+                for key, raw in values.items():
+                    number = Decimal(raw)
+                    if not number.is_finite() or not previous[key] <= number <= Decimal(state['days'][day][key]):
+                        raise ValueError('Invalid hourly quantity')
+                    previous[key] = number
         return state
 
     def needed_days(self, today):
@@ -70,12 +91,15 @@ class EnergyLedger:
             return [yesterday] if yesterday.isoformat() in self.state['days'] else []
         return [start + timedelta(days=i) for i in range((today-start).days)]
 
-    def apply(self, samples):
+    def apply(self, samples, *, observed_at=None):
         if not samples:
             raise LedgerError('No energy samples')
         new = copy.deepcopy(self.state)
         warnings = []
         today = max(s.day for s in samples)
+        if observed_at is not None:
+            if observed_at.tzinfo is None or observed_at.astimezone(ZoneInfo(self.config.site_timezone)).date() != today:
+                raise LedgerError('Observation date differs from SolarEdge day')
         previous = date.fromisoformat(new['last_day']) if new['last_day'] else None
         available = {s.day for s in samples}
         if previous and today > previous:
@@ -101,6 +125,12 @@ class EnergyLedger:
             if sample.day.isoformat() in new['gaps']:
                 new['gaps'].remove(sample.day.isoformat())
         new['last_day'] = today.isoformat()
+        if observed_at is not None:
+            stamp = observed_at.astimezone(timezone.utc).replace(minute=0, second=0, microsecond=0).isoformat()
+            hours = new.setdefault('hours', {}).setdefault(today.isoformat(), {})
+            if hours and stamp < max(hours):
+                raise LedgerError('Observation clock moved backwards')
+            hours[stamp] = dict(new['days'][today.isoformat()])
         # Compact only old completed days, retaining the bounded correction window.
         boundary = today - timedelta(days=max(32, self.config.history_days + 1))
         for day in list(new['days']):
@@ -108,6 +138,7 @@ class EnergyLedger:
                 for key in ENERGY_KEYS:
                     new['carry'][key] = str(Decimal(new['carry'][key]) + Decimal(new['days'][day][key]))
                 del new['days'][day]
+                new.setdefault('hours', {}).pop(day, None)
         # Commit before MQTT: retrying a publication can never double count.
         if self.path.exists():
             write_private_json(self.backup, self.state)
@@ -115,3 +146,17 @@ class EnergyLedger:
         write_private_json(self.marker, {'identity':identity(self.config), 'version':1})
         self.state = new
         return {key + '_total':float(Decimal(new['carry'][key]) + sum(Decimal(row[key]) for row in new['days'].values())) for key in ENERGY_KEYS}, warnings
+
+
+def daily_values(sample):
+    """Publish the same validated daily quantities, with undefined ratios absent."""
+    values = {key + '_today': float(value) for key, value in sample.values.items()}
+    values['energy_today'] = values.pop('pv_energy_today')  # Existing entity stays stable.
+    for name, denominator in (('autarky_today', 'consumption_energy'),
+                              ('self_consumption_ratio_today', 'pv_energy')):
+        total = sample.values[denominator]
+        own = sample.values['self_consumption_energy']
+        # Rounding can put a component slightly above its displayed total.
+        if total > 0:
+            values[name] = round(float(min(Decimal(100), own / total * 100)), 1)
+    return values
