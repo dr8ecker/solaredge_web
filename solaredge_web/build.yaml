@@ -1,0 +1,5 @@
+# Dockerfile uses an explicit multi-architecture Debian base. No BUILD_FROM
+# substitution is needed; Supervisor builds for the arch in config.yaml.
+labels:
+  org.opencontainers.image.title: SolarEdge Web Scraper
+  org.opencontainers.image.description: SolarEdge monitoring through Chromium UI

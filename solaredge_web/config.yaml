@@ -1,0 +1,58 @@
+name: SolarEdge Web Scraper
+version: 0.2.0
+slug: solaredge_web
+description: SolarEdge-Weboberfläche mit persistenten Energiezählern und MQTT für
+  Home Assistant
+arch:
+- amd64
+- aarch64
+startup: application
+boot: auto
+init: true
+stage: experimental
+timeout: 30
+services:
+- mqtt:want
+options:
+  solar_edge_username: ''
+  solar_edge_password: ''
+  plant_name: Spaeth
+  poll_interval: 1800
+  headless: true
+  debug: false
+  mode: normal
+  mqtt_host: ''
+  mqtt_port: 1883
+  mqtt_username: ''
+  mqtt_password: ''
+  login_url: ''
+  monitoring_url: https://monitoring.solaredge.com/
+  browser_path: ''
+  page_timeout: 30000
+  max_retries: 5
+  mqtt_tls: false
+  mqtt_discovery_prefix: homeassistant
+  site_timezone: Europe/Berlin
+  history_days: 7
+schema:
+  solar_edge_username: str
+  solar_edge_password: password
+  plant_name: str
+  poll_interval: int(30,3600)
+  headless: bool
+  debug: bool
+  mode: list(normal|discovery|smoke_test)
+  mqtt_host: str
+  mqtt_port: port
+  mqtt_username: str
+  mqtt_password: password
+  login_url: str
+  monitoring_url: url
+  browser_path: str
+  page_timeout: int(5000,120000)
+  max_retries: int(1,10)
+  mqtt_tls: bool
+  mqtt_discovery_prefix: str
+  site_timezone: str
+  history_days: int(1,31)
+url: https://github.com/dr8ecker/solaredge_web

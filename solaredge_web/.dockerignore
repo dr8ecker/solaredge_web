@@ -1,0 +1,10 @@
+__pycache__
+**/__pycache__
+*.pyc
+.venv
+data
+test-results
+tests
+README.md
+DOCS.md
+VALIDATION.md

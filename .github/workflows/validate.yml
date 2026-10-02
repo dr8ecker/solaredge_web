@@ -1,0 +1,27 @@
+name: Validate add-on
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Chromium add-on
+        run: docker build -t seweb:test solaredge_web
+      - name: Start isolated test broker
+        run: |
+          docker network create seweb-test
+          mkdir -p /tmp/seweb-broker
+          printf 'listener 1883\nallow_anonymous true\npersistence false\n' > /tmp/seweb-broker/mosquitto.conf
+          docker run -d --name seweb-broker --network seweb-test -v /tmp/seweb-broker/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro eclipse-mosquitto:2
+      - name: Test parser, ledger, real Chromium and MQTT
+        run: |
+          docker run --rm --network seweb-test -e SEWEB_TEST_MQTT_HOST=seweb-broker \
+            -v "$PWD/solaredge_web/tests:/opt/solaredge/tests:ro" \
+            -v "$PWD/solaredge_web/config.yaml:/opt/solaredge/config.yaml:ro" \
+            -v "$PWD/solaredge_web/examples:/opt/solaredge/examples:ro" \
+            --entrypoint /bin/sh seweb:test \
+            -c 'pip install --quiet PyYAML==6.0.3 && python -m unittest discover -s tests -v'

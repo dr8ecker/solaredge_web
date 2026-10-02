@@ -1,0 +1,22 @@
+{
+  "solar_edge_username": "",
+  "solar_edge_password": "",
+  "plant_name": "Spaeth",
+  "poll_interval": 1800,
+  "headless": true,
+  "debug": false,
+  "mode": "smoke_test",
+  "mqtt_host": "",
+  "mqtt_port": 1883,
+  "mqtt_username": "",
+  "mqtt_password": "",
+  "login_url": "",
+  "monitoring_url": "https://monitoring.solaredge.com/",
+  "browser_path": "",
+  "page_timeout": 30000,
+  "max_retries": 5,
+  "mqtt_tls": false,
+  "mqtt_discovery_prefix": "homeassistant",
+  "site_timezone": "Europe/Berlin",
+  "history_days": 7
+}
