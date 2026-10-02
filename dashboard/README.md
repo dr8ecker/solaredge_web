@@ -43,12 +43,15 @@ Die Gesamtzähler stehen bewusst separat als **Energiezähler seit Einrichtung**
 - **„Custom element doesn't exist“:** Die genannte Erweiterung in HACS öffnen, ihre Dashboard-Ressource prüfen und den Browser vollständig neu laden. Die drei benötigten Ressourcen müssen als JavaScript-Module eingebunden sein. `mod-card` gehört zu card-mod.
 - **„Entität nicht verfügbar“ / fehlender Wert:** Unter **Einstellungen → Geräte & Dienste → Entitäten** nach `solaredge` suchen. Die Dateien verwenden die Standard-IDs des Add-ons. Wenn HA einen Suffix wie `_2` vergeben hat oder du Sensoren umbenannt hast, ersetze die betreffende ID überall in beiden Dateien. Das gilt auch für IDs in den Textvorlagen.
 - **Leeres Diagramm:** Erst nach erfolgreichen Abrufen und gespeicherter Historie erscheinen Punkte. Prüfe Recorder und Sensor-IDs. Diese Karte startet keine zusätzlichen SolarEdge-Abfragen.
-- **Andere Farbgestaltung:** Die Karte folgt deinem hellen oder dunklen HA-Theme. Der warme Verlauf und die Rundung werden durch card-mod ergänzt.
+- **Andere Farbgestaltung:** Hintergrund und Text folgen deinem hellen oder dunklen HA-Theme. Die Symbolfarben werden direkt gesetzt, damit PV goldfarben und Hausverbrauch türkis bleiben, auch wenn das Theme Farbnamen umdefiniert. Der warme Verlauf und die Rundung werden durch card-mod ergänzt.
+- **Kleine Tageszahl oder fehlende Formatierung:** Die aktuelle Übersicht setzt die Überschrift zusätzlich über die gemeinsame Kartenhülle. Ersetze den kompletten Karteninhalt durch die aktuelle Datei und lade den Browser vollständig neu (am PC etwa mit **Strg+F5**). Die in HACS angezeigte Version allein bestätigt nicht, dass der Browser bereits die aktuelle Erweiterung geladen hat. Wenn Formatierung weiterhin fehlt, die Dashboard-Ressourcen auf doppelte oder veraltete card-mod-Einträge prüfen; siehe die [Hinweise des card-mod-Projekts zu Versionen und Cache](https://github.com/thomasloven/lovelace-card-mod#installing).
 
 ## Prüfung
 
 Beide Dateien lassen sich als YAML laden und verwenden ausschließlich die 18 vom Add-on veröffentlichten Sensoren. Die Vorlagen wurden in einer getrennten Home-Assistant-Instanz mit Zahlen, echten Nullwerten, fehlenden Werten sowie alten und fehlenden Abrufzeitpunkten geprüft.
 
 Die Karten wurden in Home Assistant 2026.10 mit Mushroom 5.2.3, mini-graph-card 0.13.0 und card-mod 4.2.1 dargestellt. Helles und dunkles Theme sowie schmale Bildschirmbreiten wurden geprüft. Browserfehler wurden dabei nicht festgestellt. Die Vorschau verwendet ausschließlich Beispieldaten, keine Zugangsdaten oder echten Anlagenwerte.
+
+Die große Tageszahl wurde zusätzlich ohne die lokalen Markdown-Stile geprüft; die Hülle stellt ihre Größe weiterhin korrekt ein. Eine geänderte Theme-Farbe für Amber verändert die direkt gesetzte PV-Symbolfarbe nicht.
 
 Die Kartentypen sind anhand ihrer offiziellen Dokumentation konfiguriert: [Mushroom](https://github.com/piitaya/lovelace-mushroom), [mini-graph-card](https://github.com/kalkih/mini-graph-card), [card-mod](https://github.com/thomasloven/lovelace-card-mod).
