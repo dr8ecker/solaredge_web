@@ -6,11 +6,13 @@ Eine Übersicht mit Tageserzeugung, Hausverbrauch, Netzbezug, Einspeisung, PV-Ei
 
 ![SolarEdge-Modul im dunklen Theme mit Beispieldaten](preview-dark.png)
 
-[Vorschau im hellen Theme](preview-light.png)
+[Vorschau im hellen Theme](preview-light.png) · [Vorschau mit Glas-Theme](preview-glass.png)
+
+Die Übersicht verwendet eine gemeinsame Fläche mit mehr Innenabstand. Große Tageswerte stehen in zwei Spalten; Autarkie und Eigenverbrauch haben eigene Prozentanzeigen. Rahmen, Schatten und Glasfilter der inneren Karten werden entfernt, damit auch auffällige Themes die Übersicht nicht in viele kleine Kästen aufteilen.
 
 ## Einfügen
 
-Ab dieser Vorlage wird **Add-on 0.3.0** benötigt. Zuerst das Add-on aktualisieren, dann den Inhalt der bestehenden Karte vollständig ersetzen. Die HACS-Erweiterungen bleiben dieselben.
+Benötigt **Add-on ab 0.3.0**. Für diese neue Gestaltung reicht es, den Inhalt der bestehenden Karte vollständig zu ersetzen; ein erneutes Add-on-Update ist nicht erforderlich, wenn bereits 0.3.0 installiert ist. Die HACS-Erweiterungen bleiben dieselben.
 
 Die Übersicht nutzt **Mushroom**, **mini-graph-card** und **card-mod**. Diese drei Erweiterungen sind in deiner gezeigten HACS-Liste bereits vorhanden. card-mod liefert auch die gemeinsame Kartenhülle; zusätzliche Helfer oder Änderungen an der Add-on-Konfiguration sind nicht erforderlich.
 
@@ -57,7 +59,7 @@ Die Gesamtzähler stehen bewusst separat als **Energiezähler seit Einrichtung**
 
 Beide Dateien lassen sich als YAML laden und verwenden ausschließlich die 30 vom Add-on veröffentlichten Sensoren. Die Vorlagen wurden in einer getrennten Home-Assistant-Instanz mit Zahlen, echten Nullwerten, fehlenden Werten sowie alten und fehlenden Abrufzeitpunkten geprüft.
 
-Die Karten wurden in Home Assistant 2026.9.4 mit Mushroom 5.2.3, mini-graph-card 0.13.0 und card-mod 4.2.1 dargestellt. Helles und dunkles Theme sowie schmale Bildschirmbreiten wurden geprüft. Browserfehler wurden dabei nicht festgestellt. Die Vorschau verwendet ausschließlich Beispieldaten, keine Zugangsdaten oder echten Anlagenwerte.
+Die Karten wurden in Home Assistant 2026.9.4 mit Mushroom 5.2.3, mini-graph-card 0.13.0 und card-mod 4.2.1 dargestellt. Helles und dunkles Theme, ein zusätzliches Glas-Theme mit eigenen Kartenrahmen sowie schmale Bildschirmbreiten bis 360 px wurden geprüft. Die Tageszahlen sind 23 px, Prozentwerte 25 px groß; lange Zustände können umbrechen. Die Leistungsbeschriftung „Haus“ vermeidet abgeschnittenen Text auf schmalen Karten. Browserfehler wurden dabei nicht festgestellt. Die Vorschau verwendet ausschließlich Beispieldaten, keine Zugangsdaten oder echten Anlagenwerte.
 
 Die große Tageszahl wurde zusätzlich ohne die lokalen Markdown-Stile geprüft; die Hülle stellt ihre Größe weiterhin korrekt ein. Eine geänderte Theme-Farbe für Amber verändert die direkt gesetzte PV-Symbolfarbe nicht.
 
