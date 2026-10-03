@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 """Phase 1–2 runner: page loading, bounded backoff and clean shutdown."""
 
 import argparse
@@ -9,6 +10,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+from . import __copyright__, __version__
 from .browser import BrowserManager
 from .config import Config, ConfigurationError
 from .files import write_private_json
@@ -148,6 +150,7 @@ def main() -> int:
         print(f"ERROR: {error}", flush=True)
         return 2
     configure_logging(config)
+    LOGGER.info("SolarEdge Web Scraper %s · %s", __version__, __copyright__)
     try:
         return asyncio.run(run(config, once=args.once))
     except KeyboardInterrupt:

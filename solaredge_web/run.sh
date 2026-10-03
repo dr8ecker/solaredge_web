@@ -1,4 +1,5 @@
 #!/bin/sh
+# Copyright (c) 2026 8ecker.de
 set -eu
 umask 077
 

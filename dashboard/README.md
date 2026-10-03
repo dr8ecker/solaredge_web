@@ -64,3 +64,7 @@ Die transparenten Karten wurden in Home Assistant 2026.9.4 mit Mushroom 5.2.3, m
 Die große Tageszahl wurde zusätzlich ohne die lokalen Markdown-Stile geprüft; die Hülle stellt ihre Größe weiterhin korrekt ein. Eine geänderte Theme-Farbe für Amber verändert die direkt gesetzte PV-Symbolfarbe nicht.
 
 Die Kartentypen sind anhand ihrer offiziellen Dokumentation konfiguriert: [Mushroom](https://github.com/piitaya/lovelace-mushroom), [mini-graph-card](https://github.com/kalkih/mini-graph-card), [card-mod](https://github.com/thomasloven/lovelace-card-mod).
+
+---
+
+© 2026 [8ecker.de](https://8ecker.de)

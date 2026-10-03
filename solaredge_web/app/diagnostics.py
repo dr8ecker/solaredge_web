@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 """Allowlisted failure signals; never serialize browser exception messages."""
 
 import platform

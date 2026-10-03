@@ -48,3 +48,7 @@ Der Live-Importtest verwendet einen privaten HA-Testzugang direkt zum Test-Core.
 - Die Detailkarte verwendet ebenfalls `mod-card`, damit die Formatierung schon beim ersten direkten Öffnen zuverlässig angewendet wird. Der Kartenhintergrund wurde als vollständig transparent und die Rundung als 24 px bestätigt.
 
 Der Viertelstundentakt bezeichnet die regulären Starts nach einem erfolgreichen Abruf. Beim Start erfolgt sofort ein Abruf; Fehler, Schutzpausen, lange laufende Abrufe oder größere Uhrkorrekturen können einzelne Termine auslassen. Tageswerte erscheinen nach erfolgreichem Auslesen der Webseite und werden auch kurz nach Mitternacht nicht durch erfundene Nullwerte ersetzt. Vorhandene Optionen werden nicht überschrieben; für vier reguläre Abrufe pro Stunde muss `poll_interval` auf `900` stehen.
+
+---
+
+© 2026 [8ecker.de](https://8ecker.de)

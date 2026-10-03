@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 """Keep one Chromium context. Never call SolarEdge endpoints directly."""
 
 import json

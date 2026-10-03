@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 playwright==1.63.0
 paho-mqtt==2.1.0
 tzdata==2026.2

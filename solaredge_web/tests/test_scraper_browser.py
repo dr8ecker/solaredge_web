@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 """Synthetic DOM fixtures reproduce discovered scopes, including async loading."""
 import tempfile
 import unittest

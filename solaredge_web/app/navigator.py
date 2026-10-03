@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 """Choose the configured plant through the regular rendered plant list."""
 
 from .login import check_challenge

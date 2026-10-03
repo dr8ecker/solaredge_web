@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 """MQTT Discovery, retained values, per-field validity, LWT and reconnect."""
 
 import asyncio
@@ -12,6 +13,7 @@ from urllib.request import Request, urlopen
 
 import paho.mqtt.client as mqtt
 
+from . import __version__
 from .energy import identity
 
 LOGGER = logging.getLogger(__name__)
@@ -121,8 +123,8 @@ class MqttPublisher:
                 {'topic':self.base + '/valid/' + key},
             ], 'availability_mode':'all',
             'device':{'identifiers':[self.device_id], 'name':'SolarEdge Web Scraper',
-                      'manufacturer':'SolarEdge / Community', 'model':'Monitoring Web UI', 'sw_version':'0.3.1'},
-            'origin':{'name':'SolarEdge Web Scraper','sw_version':'0.3.1',
+                      'manufacturer':'8ecker.de', 'model':'Monitoring Web UI', 'sw_version':__version__},
+            'origin':{'name':'SolarEdge Web Scraper','sw_version':__version__,
                       'support_url':'https://github.com/dr8ecker/solaredge_web'},
         }
         if diagnostic:

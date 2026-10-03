@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 """Development probe of public login UI; no cookie/token/HTML output."""
 
 import asyncio

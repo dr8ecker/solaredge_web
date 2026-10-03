@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 """Inspect visible DOM only. Candidate selectors require later verification."""
 
 import re

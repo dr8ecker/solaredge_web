@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 """Day-correct external HA statistics; never writes MQTT sensor statistics.
 
 Observed increases stay in their observation hour. Unobserved historical energy

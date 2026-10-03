@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 """Local process, browser, successful scrape and MQTT health snapshot."""
 
 import argparse

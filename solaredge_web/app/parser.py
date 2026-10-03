@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 """Strict visible-text quantities. Never turn a parse failure into zero."""
 
 import re

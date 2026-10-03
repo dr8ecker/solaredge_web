@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 """Onboard a dedicated empty HA test container; never prints generated credentials."""
 import argparse
 import json

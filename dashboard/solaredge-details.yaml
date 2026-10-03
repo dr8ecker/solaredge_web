@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 # Transparente manuelle Detailkarte, benötigt card-mod wie die Übersicht.
 type: custom:mod-card
 card:
@@ -57,6 +58,8 @@ card:
   - entity: sensor.solaredge_energy_gap_count
     name: Fehlende Energietage
     icon: mdi:calendar-alert
+  - type: section
+    label: © 2026 8ecker.de
   card_mod:
     style: |
       :host(:not([hidden])), ha-card:not([hidden]) {

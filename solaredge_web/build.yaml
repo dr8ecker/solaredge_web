@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 # Dockerfile uses an explicit multi-architecture Debian base. No BUILD_FROM
 # substitution is needed; Supervisor builds for the arch in config.yaml.
 labels:

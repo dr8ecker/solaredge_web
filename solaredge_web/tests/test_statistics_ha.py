@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 """Opt-in verification with a dedicated, disposable Home Assistant test instance."""
 import json
 import os

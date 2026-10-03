@@ -1,2 +1,3 @@
+# Copyright (c) 2026 8ecker.de
 -r requirements.txt
 PyYAML==6.0.3

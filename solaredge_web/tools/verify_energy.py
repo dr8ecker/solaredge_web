@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 """Explicit developer live validation of date switching, no account-page dump."""
 import asyncio
 import json

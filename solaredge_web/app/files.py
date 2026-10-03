@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 """Atomic writes of private runtime files; no public diagnostic server."""
 
 import json

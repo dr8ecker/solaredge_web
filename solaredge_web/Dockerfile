@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 FROM python:3.12.12-slim-bookworm
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -17,11 +18,14 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* /root/.cache
 
 # Keep version labels below dependencies so updates can reuse Chromium layers.
-ARG BUILD_VERSION=0.3.1
+ARG BUILD_VERSION=0.3.2
 ARG BUILD_ARCH=amd64
 LABEL io.hass.version="${BUILD_VERSION}" \
       io.hass.type="app" \
-      io.hass.arch="${BUILD_ARCH}"
+      io.hass.arch="${BUILD_ARCH}" \
+      org.opencontainers.image.authors="8ecker.de" \
+      org.opencontainers.image.vendor="8ecker.de" \
+      org.opencontainers.image.description="SolarEdge Web Scraper. Copyright (c) 2026 8ecker.de"
 
 COPY app ./app
 COPY tools ./tools

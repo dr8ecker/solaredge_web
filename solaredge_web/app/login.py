@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 """Regular, bounded login using verified labels and persistent storage state."""
 
 import asyncio

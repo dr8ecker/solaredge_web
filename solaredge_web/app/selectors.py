@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 """Verified live DOM 2026-10-02; semantic fallbacks stay in these scopes.
 
 No generated CSS hashes, absolute XPath, graph internals or network payloads.

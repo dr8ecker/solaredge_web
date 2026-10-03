@@ -33,3 +33,7 @@ Das kompatibel erweiterte Ledger enthält optional `hours`: je Tag und UTC-Stund
 Der Import erzeugt für jede der fünf Energiemengen eine eigene `solaredge_web:`-Statistik mit kWh, `unit_class: energy`, `mean_type: 0` und einer kumulativen Summe. Ein Ausgangspunkt vor dem ersten gespeicherten Tag verhindert, dass dessen Energie als bloßer Startzähler verloren geht. Alle noch gespeicherten Tage werden bei jedem Import konsistent neu berechnet; spätere Tageskorrekturen ändern auch die Folgesummen. Die Import-API ersetzt gleiche Statistik-ID/Stundenbeginn-Kombinationen. Bestehende `sensor.*`-Statistiken werden nicht verändert.
 
 Fehlende historische Stundenprofile und Restenergie abgeschlossener Tage werden in deren letzter Stunde verbucht. UTC-Stundeniteration berücksichtigt den 23- bzw. 25-Stunden-Tag in Europe/Berlin. Der Import bestätigt die zuletzt gespeicherten Summen durch Zurücklesen aus HA. Fehler bleiben separat sichtbar und verhindern keine MQTT-Veröffentlichung.
+
+---
+
+© 2026 [8ecker.de](https://8ecker.de)

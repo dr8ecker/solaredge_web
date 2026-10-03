@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 """Structured logs without raw browser exceptions, DOM or authentication data."""
 
 import json

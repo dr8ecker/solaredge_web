@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 """Local wall-clock polling slots, including midnight and daylight-saving changes."""
 
 import asyncio

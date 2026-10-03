@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 """Read quantities from rendered cards, SVG text and visible hover tooltips."""
 
 import re

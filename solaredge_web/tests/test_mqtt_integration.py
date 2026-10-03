@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 """Opt-in test against a dedicated real Mosquitto broker, never a user's broker."""
 import asyncio
 import json

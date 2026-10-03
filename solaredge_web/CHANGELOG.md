@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.2
+
+- Add-on im App-Store als `stable` gekennzeichnet; Kennzeichnung „Experimentell“ entfernt.
+- © 2026 8ecker.de in beiden Dashboard-Karten, Dokumentationen, Benachrichtigungsvorlage, Startprotokoll, Container-Metadaten und Quelldateien ergänzt.
+- Info-Seite erklärt Zweck und Ablauf; vollständige Einrichtung, Optionen, Sensoren und Fehlersuche in die Dokumentation verschoben.
+- Einheitliche Versionsangabe für das Startprotokoll und die MQTT-Discovery.
+
 ## 0.3.1
 
 - Standardintervall 15 Minuten (`poll_interval: 900`). Reguläre Abrufe starten zu festen Viertelstunden bei :00:01, :15:01, :30:01 und :45:01, einschließlich 00:00:01 in der Anlagenzeitzone.
@@ -38,3 +45,7 @@
 ## 0.1.0
 
 - Add-on-Grundgerüst, Container-Chromium und öffentlicher Seitentest.
+
+---
+
+© 2026 [8ecker.de](https://8ecker.de)

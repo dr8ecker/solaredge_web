@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 """Run inside the HA test image; validates templates without sending a message."""
 import asyncio
 

@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 import asyncio
 import json
 import tempfile

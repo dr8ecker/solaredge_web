@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 """Actual Chromium against local fixtures, not claimed SolarEdge DOM samples."""
 
 import json

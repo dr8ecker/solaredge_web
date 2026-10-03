@@ -51,3 +51,7 @@ Ein Importfehler unterbricht die MQTT-Werte nicht. Der nächste Import schreibt 
 HA-Statistiken und das gesamte Add-on-Verzeichnis `/data` sollten gemeinsam gesichert werden. Nach Wiederherstellung einer leeren HA-Datenbank kann das Add-on nur seine noch vorhandenen detaillierten Tage erneut importieren. Es kann bereits kompaktierte alte Tagesverteilungen nicht wiederherstellen.
 
 Technische Grundlagen: [Supervisor-Verbindung zu HA](https://developers.home-assistant.io/docs/apps/communication/#home-assistant-core), [HA-Statistikmetadaten](https://developers.home-assistant.io/blog/2025/10/16/recorder-statistics-api-changes/).
+
+---
+
+© 2026 [8ecker.de](https://8ecker.de)

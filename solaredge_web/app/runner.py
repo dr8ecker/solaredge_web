@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 """Production/discovery orchestration; browser, ledger and MQTT stay separate."""
 
 import asyncio

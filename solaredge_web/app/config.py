@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 """Read Supervisor options without printing credentials or supplied values."""
 
 import json

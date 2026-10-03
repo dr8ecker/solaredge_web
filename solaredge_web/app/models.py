@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal

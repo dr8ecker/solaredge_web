@@ -18,3 +18,7 @@ Der Sensor **Datenzustand** wird vom laufenden Add-on spätestens alle zehn Seku
 Pro anhaltendem Vorfall sendet die laufende Automation eine Warnung und wartet auf erfolgreiche Erholung. Erst dann kann ein neuer Vorfall eine neue Warnung auslösen. Eine Entwarnung ersetzt auf unterstützten Handys die vorherige Meldung. Nach einem HA-Neustart oder dem Neuladen der Automationen beginnt die Wartezeit neu; ein weiterhin bestehender Vorfall kann dann erneut gemeldet werden.
 
 Wenn du keinen Zugriff auf ein Handy mit Companion-App hast, kannst du dieselben Zustände in einer eigenen HA-Automation für eine andere Benachrichtigungsaktion verwenden.
+
+---
+
+© 2026 [8ecker.de](https://8ecker.de)

@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 # Transparente manuelle Karte mit abgerundeten Kacheln.
 type: custom:mod-card
 card:
@@ -1029,6 +1030,8 @@ card:
       {% set interval = states('sensor.solaredge_scraper_poll_interval') %} Momentaufnahmen · {{ 'Abruf alle ' ~ ('%g' | format(interval | float / 60)) ~ ' Min.' if is_number(interval) else 'Intervall nicht verfügbar' }}
       {% if is_state('sensor.solaredge_history_import_status', 'error') %} ⚠ Historienimport gestört. Aktuelle Sensorwerte werden weiter übertragen. {% elif is_state('sensor.solaredge_history_import_status', 'supervisor_required') %} ⚠ Historienimport benötigt den Zugriff auf Home Assistant über den Supervisor. {% endif %}
       {% set gaps = states('sensor.solaredge_energy_gap_count') %} {% if is_number(gaps) and gaps | int > 0 %} ⚠ {{ gaps | int }} Energietage fehlen. Die Gesamtbilanz ist unvollständig. {% endif %}
+
+      © 2026 [8ecker.de](https://8ecker.de)
     card_mod:
       style:
         .: |

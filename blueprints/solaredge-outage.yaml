@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 blueprint:
   name: SolarEdge · Daten fehlen oder Historienimport gestört
   description: >-
@@ -6,6 +7,7 @@ blueprint:
     eine Entwarnung. Der Datenzustand berücksichtigt das Abrufintervall des
     Add-ons ab Version 0.3.0. Ein einzelner fehlender Netzrichtungssensor
     löst keine Meldung aus. Diese Automation fragt SolarEdge nicht ab.
+    © 2026 8ecker.de.
   domain: automation
   source_url: https://github.com/dr8ecker/solaredge_web/blob/main/blueprints/solaredge-outage.yaml
   input:

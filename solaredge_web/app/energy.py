@@ -1,3 +1,4 @@
+# Copyright (c) 2026 8ecker.de
 """Persisted per-day high-water ledger; no overlapping ranges or reset zeros."""
 
 import copy
