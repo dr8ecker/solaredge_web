@@ -38,6 +38,7 @@ class SolarEdgeLogin:
     async def ensure(self, browser):
         page = browser.page
         await browser.load_monitoring()
+        browser.stage = 'session_ui_wait'
         await check_challenge(page)
         # Wait for the shell to finish routing before deciding to log in.
         await page.wait_for_function("""() => document.body &&
@@ -49,13 +50,13 @@ class SolarEdgeLogin:
             raise AuthenticationError("Login cooldown active")
         if not self.config.solar_edge_username or not self.config.solar_edge_password:
             raise AuthenticationError("SolarEdge credentials missing")
-        # Exactly one credential submission per cycle, no fast repeated attempts.
-        self.next_login = asyncio.get_running_loop().time() + max(1800, self.config.poll_interval)
+        browser.stage = 'login_navigation'
         if self.config.login_url:
             await page.goto(self.config.login_url, wait_until='domcontentloaded')
         elif not await page.get_by_label('Email address', exact=True).count():
             await page.get_by_role('button', name=re.compile(r'^(Anmelden|Sign in|Log in)$', re.I)).click()
         email = page.get_by_label('Email address', exact=True)
+        browser.stage = 'login_form_wait'
         await email.wait_for(state='visible')
         await check_challenge(page)
         trusted = {"login.solaredge.com"}
@@ -70,9 +71,16 @@ class SolarEdgeLogin:
         if await submit.count() != 1:
             raise AuthenticationError("Login action is ambiguous")
         LOGGER.info("Signing in with regular SolarEdge login form")
+        browser.stage = 'login_form_fill'
         await email.fill(self.config.solar_edge_username)
         await form.get_by_label('Password', exact=True).fill(self.config.solar_edge_password)
+        # Navigation, form waits and fills do not submit credentials. Arm the
+        # cooldown only at submission, before click: a failed click may already
+        # have sent the form, so its result must still be treated conservatively.
+        browser.stage = 'login_submit'
+        self.next_login = asyncio.get_running_loop().time() + max(1800, self.config.poll_interval)
         await submit.click()
+        browser.stage = 'login_result_wait'
         try:
             await page.wait_for_function("""() => document.body &&
                 /Anlagen|Sites|Dashboard|incorrect|invalid password|ungültig|captcha|verification code|Bestätigungscode|security check|multi.factor/i.test(document.body.innerText)""")

@@ -57,6 +57,12 @@ Der Viertelstundentakt bezeichnet die regulären Starts nach einem erfolgreichen
 
 Die Gegenrichtung wird nur bei genau einem eindeutig beschrifteten, gültigen positiven Netzfluss ergänzt. Ohne bestätigte Richtung, bei unlesbaren/mehrdeutigen Angaben oder bei allein angezeigten 0 W wird keine fehlende Gegenrichtung geraten. Tagesenergie, Zähler und Statistikimport bleiben unverändert.
 
+## Unveröffentlichte Login-Korrektur
+
+- Am 04.10.2026 unter Windows mit Playwright 1.63.0 und dessen Chromium gegen lokale Testseiten geprüft: 82 Tests ausgeführt, 80 bestanden. Zwei opt-in Prüfungen für einen separaten MQTT-Broker und eine separate Home-Assistant-Instanz wurden mangels Testdiensten übersprungen.
+- Fünf zusätzliche Regressionstests prüfen Monitoring-Timeout, Netzwerkfehler beim Öffnen des Loginformulars, Formularlade-Timeout und Ausfüllfehler ohne Login-Schutzpause sowie einen unklaren Absendeversuch mit beibehaltener Schutzpause. Nach Fehlern vor dem Absenden gelingt der erneute Login; bei unklarem Absenden wird kein zweiter Klick versucht.
+- Die bereitgestellten Betriebslogs zeigen `ERR_NETWORK_CHANGED` und Timeouts in `monitoring_ui_wait`. Deren Ursache und die Korrektur auf dem Home-Assistant-Gerät wurden noch nicht live geprüft. Ein Monitoring-Timeout allein aktiviert auch im bisherigen Code keine Login-Schutzpause; die behobene vorzeitige Aktivierung betrifft die anschließende Login-Vorbereitung.
+
 ---
 
 © 2026 [8ecker.de](https://8ecker.de)

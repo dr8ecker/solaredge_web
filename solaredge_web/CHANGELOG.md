@@ -1,5 +1,11 @@
 # Changelog
 
+## Unveröffentlicht
+
+- Login-Schutzpause beginnt erst vor dem Absenden des ausgefüllten Formulars. Navigations-, Formularlade- und Ausfüllfehler blockieren dadurch keine normalen Wiederholungen ohne Anmeldeversuch.
+- Unklarer Absendeversuch behält die Schutzpause; bestätigte Fehlanmeldungen werden weiterhin nicht schnell wiederholt.
+- Separate Login-Phasen für sichere Fehlerdiagnose und Regressionstests mit lokalem Browser ergänzt.
+
 ## 0.3.3
 
 - Bei eindeutig erkanntem positivem Import-/Exportfluss wird die nicht angezeigte Gegenrichtung als 0 W veröffentlicht. Netzbezug bleibt beim Einspeisen dadurch verfügbar und umgekehrt.

@@ -143,13 +143,13 @@ Browserfehler erhalten begrenzten Backoff von 10, 30, 60, 120 bis 300 Sekunden. 
 
 Bei einem HTTP-429-Limit im Monitoring-Aufruf pausiert der normale Modus mindestens 30 Minuten.
 
-Unbestätigter Login setzt `login_required` und begrenzt weitere Anmeldeversuche auf frühestens 30 Minuten. MFA/CAPTCHA setzt `manual_login_required` und pausiert bis Neustart. Nötige manuelle Anmeldung muss außerhalb des headless Add-ons stattfinden; kein integriertes Web-VNC und keine Umgehung. Eine autorisierte Playwright-Session kann privat in `solaredge_storage_state.json` bereitgestellt werden.
+Die Login-Schutzpause beginnt erst unmittelbar vor dem Absenden des ausgefüllten Formulars. Netzwerkfehler und Timeouts beim Öffnen oder Ausfüllen des Formulars bleiben im normalen Browser-Backoff; sie lösen keine Login-Schutzpause aus. Nach einem unbestätigten Absendeversuch sind weitere Anmeldeversuche frühestens nach 30 Minuten möglich, auch bei unklarem Ergebnis des Klicks. Unbestätigter Login setzt `login_required`. MFA/CAPTCHA setzt `manual_login_required` und pausiert bis Neustart. Nötige manuelle Anmeldung muss außerhalb des headless Add-ons stattfinden; kein integriertes Web-VNC und keine Umgehung. Eine autorisierte Playwright-Session kann privat in `solaredge_storage_state.json` bereitgestellt werden.
 
 Bei geänderter Webseite zuerst Discovery-Berichte prüfen. Fehlende/unparsebare Felder werden unavailable; bei einem kompletten fehlgeschlagenen Abruf bleiben vorherige Werte innerhalb der Fehler-Toleranz erhalten. Nie Parsingfehler als Null interpretieren.
 
 Healthcheck: Prozess, Heartbeat, Browser, Alter des letzten erfolgreichen Abrufs und MQTT. Kurze Start-Schonfrist. `health.json` und `last_scrape.json` enthalten keine Zugangsdaten.
 
-Ab 0.2.1 nennt `Dashboard failure details` die Ausführungsphase, eine sichere Fehlerkategorie und bekannte Netzwerkcodes (z.B. `ERR_NAME_NOT_RESOLVED` für DNS), sowie Architektur, gegebenenfalls Container-Speicherlimit und OOM-Kill-Zähler. Rohe Playwright-Meldungen und URLs werden nicht geloggt. Ein fehlgeschlagenes Entladen der Seite beendet den Retry-Ablauf nicht; der defekte Browser wird geschlossen und beim nächsten Versuch neu gestartet.
+Ab 0.2.1 nennt `Dashboard failure details` die Ausführungsphase, eine sichere Fehlerkategorie und bekannte Netzwerkcodes (z.B. `ERR_NAME_NOT_RESOLVED` für DNS), sowie Architektur, gegebenenfalls Container-Speicherlimit und OOM-Kill-Zähler. Die Login-Phasen unterscheiden Session-Prüfung, Navigation, Formularladen, Ausfüllen, Absenden und Ergebnisprüfung. `monitoring_ui_wait` bedeutet, dass die erwartete Seitenoberfläche nicht rechtzeitig erschien; dies allein bestätigt weder eine abgelaufene Session noch falsche Zugangsdaten. Rohe Playwright-Meldungen und URLs werden nicht geloggt. Ein fehlgeschlagenes Entladen der Seite beendet den Retry-Ablauf nicht; der defekte Browser wird geschlossen und beim nächsten Versuch neu gestartet.
 
 ## Persistenz und Sicherheit
 

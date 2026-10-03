@@ -5,6 +5,9 @@ import threading
 import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from unittest.mock import AsyncMock, patch
+
+from playwright.async_api import Error, TimeoutError
 
 from app.browser import BrowserManager
 from app.config import Config
@@ -72,6 +75,57 @@ class LoginBrowserTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(AuthenticationError): await login.ensure(self.browser)
         with self.assertRaises(AuthenticationError): await login.ensure(self.browser)
         self.assertGreater(login.next_login,0)
+    async def test_monitoring_timeout_does_not_arm_login_cooldown(self):
+        login=await self.start()
+        with patch.object(self.browser, 'load_monitoring', AsyncMock(side_effect=TimeoutError('UI not ready'))):
+            with self.assertRaises(TimeoutError): await login.ensure(self.browser)
+        self.assertEqual(login.next_login,0)
+        await login.ensure(self.browser)
+        self.assertEqual(await self.browser.page.evaluate('window.submissions'),1)
+    async def test_login_navigation_failure_can_retry_without_cooldown(self):
+        login=await self.start()
+        goto=self.browser.page.goto
+        async def fail_login_navigation(url, **options):
+            if url == self.config.login_url:
+                raise Error('net::ERR_NETWORK_CHANGED')
+            return await goto(url, **options)
+        with patch.object(self.browser.page, 'goto', side_effect=fail_login_navigation):
+            with self.assertRaises(Error): await login.ensure(self.browser)
+        self.assertEqual(self.browser.stage,'login_navigation')
+        self.assertEqual(login.next_login,0)
+        await login.ensure(self.browser)
+        self.assertEqual(await self.browser.page.evaluate('window.submissions'),1)
+    async def test_form_wait_timeout_can_retry_without_cooldown(self):
+        login=await self.start()
+        await self.browser.page.route('**/login', lambda route: route.fulfill(
+            content_type='text/html',body='<p>Loading...</p>'))
+        with self.assertRaises(TimeoutError): await login.ensure(self.browser)
+        self.assertEqual(self.browser.stage,'login_form_wait')
+        self.assertEqual(login.next_login,0)
+        await self.browser.page.unroute('**/login')
+        await login.ensure(self.browser)
+        self.assertEqual(await self.browser.page.evaluate('window.submissions'),1)
+    async def test_fill_failure_can_retry_without_cooldown(self):
+        login=await self.start()
+        from playwright.async_api import Locator
+        with patch.object(Locator, 'fill', AsyncMock(side_effect=TimeoutError('Input not ready'))):
+            with self.assertRaises(TimeoutError): await login.ensure(self.browser)
+        self.assertEqual(self.browser.stage,'login_form_fill')
+        self.assertEqual(login.next_login,0)
+        self.assertEqual(await self.browser.page.evaluate('window.submissions'),0)
+        await login.ensure(self.browser)
+        self.assertEqual(await self.browser.page.evaluate('window.submissions'),1)
+    async def test_uncertain_submission_keeps_cooldown_and_blocks_second_click(self):
+        login=await self.start()
+        from playwright.async_api import Locator
+        click=AsyncMock(side_effect=TimeoutError('Submission result unknown'))
+        with patch.object(Locator, 'click', click):
+            with self.assertRaises(TimeoutError): await login.ensure(self.browser)
+            self.assertEqual(self.browser.stage,'login_submit')
+            self.assertGreater(login.next_login,0)
+            with self.assertRaisesRegex(AuthenticationError,'Login cooldown active'):
+                await login.ensure(self.browser)
+        self.assertEqual(click.await_count,1)
     async def test_challenge_pauses_before_any_credentials_are_filled(self):
         login=await self.start(path='/challenge')
         with self.assertRaises(ManualLoginRequired): await login.ensure(self.browser)
