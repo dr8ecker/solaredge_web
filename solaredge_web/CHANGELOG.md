@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.3
+
+- Bei eindeutig erkanntem positivem Import-/Exportfluss wird die nicht angezeigte Gegenrichtung als 0 W veröffentlicht. Netzbezug bleibt beim Einspeisen dadurch verfügbar und umgekehrt.
+- Fehlende, unlesbare, negative oder mehrdeutige Flussangaben ergeben weiterhin keine erfundenen Nullwerte. Versteckte SVG-Beschriftungen werden ignoriert.
+- Browser- und MQTT-Prüfungen für Richtungswechsel, bestätigte Nullwerte sowie fehlerhafte und mehrdeutige Anzeigen ergänzt.
+
 ## 0.3.2
 
 - Add-on im App-Store als `stable` gekennzeichnet; Kennzeichnung „Experimentell“ entfernt.

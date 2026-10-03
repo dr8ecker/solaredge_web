@@ -49,6 +49,15 @@ class MqttIntegrationTests(unittest.IsolatedAsyncioTestCase):
             await until(lambda:received.get(publisher.base+'/availability')=='online')
             await until(lambda:received.get(publisher.base+'/valid/grid_import_power')=='offline')
             self.assertNotIn(publisher.base+'/state/grid_import_power',received)
+            # A confirmed export publishes a valid zero import; losing the
+            # direction later must invalidate it instead of retaining zero.
+            publisher.update({'grid_export_power':9600,'grid_import_power':0},solar_success=True)
+            await until(lambda:received.get(publisher.base+'/valid/grid_import_power')=='online')
+            await until(lambda:received.get(publisher.base+'/state/grid_import_power')=='0')
+            self.assertEqual(received[publisher.base+'/state/grid_export_power'],'9600')
+            publisher.update({'pv_power':1000},solar_success=True)
+            await until(lambda:received.get(publisher.base+'/valid/grid_import_power')=='offline')
+            await until(lambda:received.get(publisher.base+'/valid/grid_export_power')=='offline')
             # A new subscriber gets the retained values without another scrape.
             received.clear()
             observer.subscribe(publisher.base+'/#',qos=1)

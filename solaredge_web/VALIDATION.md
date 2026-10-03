@@ -49,6 +49,14 @@ Der Live-Importtest verwendet einen privaten HA-Testzugang direkt zum Test-Core.
 
 Der Viertelstundentakt bezeichnet die regulären Starts nach einem erfolgreichen Abruf. Beim Start erfolgt sofort ein Abruf; Fehler, Schutzpausen, lange laufende Abrufe oder größere Uhrkorrekturen können einzelne Termine auslassen. Tageswerte erscheinen nach erfolgreichem Auslesen der Webseite und werden auch kurz nach Mitternacht nicht durch erfundene Nullwerte ersetzt. Vorhandene Optionen werden nicht überschrieben; für vier reguläre Abrufe pro Stunde muss `poll_interval` auf `900` stehen.
 
+## Ergänzungen in 0.3.3
+
+- Vier zusätzliche Browser-Tests für bestätigte Import-/Export-Richtung mit 0 W in der Gegenrichtung, Richtungswechsel, deutsche/englische Labels, unbekannte/negative/falsche Einheiten, doppelte oder unvollständige Labels, versteckte Texte und explizit angezeigte Nullwerte.
+- 76 Prüfungen mit echtem Chromium und isoliertem Mosquitto bestanden; der zusätzliche opt-in Test gegen echtes Home Assistant läuft in CI. MQTT bestätigt die Veröffentlichung einer gültigen Null und deren Ungültigkeit bei anschließend fehlender Flussrichtung.
+- Am 03.10.2026 mit dem autorisierten Testkonto erneut live bestätigt: Bei eindeutig angezeigter positiver Einspeisung liefert der Scraper 0 W Netzbezug, ohne Warnungen. Dieser Browsercheck verwendet lokales Microsoft Edge mit Playwright; die automatischen DOM-Prüfungen verwenden Chromium im AMD64-Container. Der private Messbericht wird nicht veröffentlicht.
+
+Die Gegenrichtung wird nur bei genau einem eindeutig beschrifteten, gültigen positiven Netzfluss ergänzt. Ohne bestätigte Richtung, bei unlesbaren/mehrdeutigen Angaben oder bei allein angezeigten 0 W wird keine fehlende Gegenrichtung geraten. Tagesenergie, Zähler und Statistikimport bleiben unverändert.
+
 ---
 
 © 2026 [8ecker.de](https://8ecker.de)

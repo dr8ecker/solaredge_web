@@ -16,6 +16,26 @@ class SolarEdgeScraper:
     def __init__(self, config):
         self.config = config
 
+    @staticmethod
+    def grid_power(text):
+        """A single positive, labelled net flow establishes zero opposite flow."""
+        groups = []
+        for direction in ('grid_import', 'grid_export'):
+            words = '|'.join(re.escape(word) for word in sorted(KEYWORDS[direction], key=len, reverse=True))
+            groups.append(f'(?P<{direction}>{words})')
+        labels = list(re.finditer(r'(?<!\w)(?:' + '|'.join(groups) + r')(?!\w)', text, re.I))
+        values = {}
+        for label in labels:
+            key = label.lastgroup + '_power'
+            quantity = ValueParser.PATTERN.match(text[label.end():].lstrip())
+            if key in values or quantity is None:
+                raise ParseError('Grid direction ambiguous or missing a quantity')
+            values[key] = float(ValueParser.parse(quantity.group(), 'W').value)
+        if len(values) == 1 and next(iter(values.values())) > 0:
+            opposite = ({'grid_import_power', 'grid_export_power'} - values.keys()).pop()
+            values[opposite] = 0.0
+        return values
+
     async def begin_transition(self, page):
         # Observe the actual energy scopes, not URL requests or chart internals.
         await page.evaluate("""() => {
@@ -176,14 +196,15 @@ class SolarEdgeScraper:
             result.warnings.append('last_update')
         try:
             flow = await unique(page, 'flow')
-            text = await flow.evaluate("el => Array.from(el.querySelectorAll('svg text')).map(x => x.textContent).join(' ')")
-            for key, words in (('consumption_power', KEYWORDS['consumption']),
-                               ('grid_export_power', KEYWORDS['grid_export']),
-                               ('grid_import_power', KEYWORDS['grid_import'])):
+            text = await flow.evaluate("""el => Array.from(el.querySelectorAll('svg text'))
+                .filter(x => x.getClientRects().length && getComputedStyle(x).visibility !== 'hidden')
+                .map(x => x.textContent).join(' ')""")
+            for key, words in (('consumption_power', KEYWORDS['consumption']),):
                 pattern = '|'.join(re.escape(w) for w in sorted(words, key=len, reverse=True))
                 match = re.search(r'(?:' + pattern + r')\s*([-+]?\d[\d.,\s]*\s*(?:kW|MW|W))', text, re.I)
                 if match:
                     result.values[key] = float(ValueParser.parse(match.group(1), 'W').value)
+            result.values.update(self.grid_power(text))
         except Exception:
             result.warnings.append('power_flow')
         return result

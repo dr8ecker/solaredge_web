@@ -1,4 +1,4 @@
-# SolarEdge Web Scraper 0.3.2
+# SolarEdge Web Scraper 0.3.3
 
 Das Add-on bringt die Werte deiner PV-Anlage aus dem SolarEdge-Monitoring-Portal nach Home Assistant. Damit kannst du Solarerzeugung, Hausverbrauch, Netzbezug und Einspeisung im Energie-Dashboard auswerten und die wichtigsten Werte auf deinem normalen Dashboard anzeigen.
 
@@ -22,7 +22,7 @@ Home Assistant mit App-/Add-on-Support, eine eingerichtete MQTT-Integration mit 
 
 ## Was bedeuten die Werte?
 
-Leistungswerte sind Momentaufnahmen des jeweiligen Abrufs. Die Tagesbilanz verwendet die auf der Webseite angezeigten Energiemengen. Fehlende oder nicht eindeutig lesbare Werte werden als nicht verfügbar gekennzeichnet. Die genaue Stundenverteilung eines nachträglich gelesenen Tages lässt sich aus dessen Tagesmenge nicht rekonstruieren.
+Leistungswerte sind Momentaufnahmen des jeweiligen Abrufs. Bei eindeutig angezeigtem Netzbezug oder Einspeisung mit positiver Leistung erhält die nicht angezeigte Gegenrichtung 0 W. Unklare oder nicht lesbare Flussangaben bleiben nicht verfügbar. Die Tagesbilanz verwendet die auf der Webseite angezeigten Energiemengen. Die genaue Stundenverteilung eines nachträglich gelesenen Tages lässt sich aus dessen Tagesmenge nicht rekonstruieren.
 
 ## Einrichtung und Hilfe
 

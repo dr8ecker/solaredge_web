@@ -64,7 +64,62 @@ class ScraperBrowserTests(unittest.IsolatedAsyncioTestCase):
         result = await self.scraper.live(self.browser.page)
         self.assertEqual(result.values['pv_power'],2400)
         self.assertEqual(result.values['grid_import_power'],810)
-        self.assertNotIn('grid_export_power',result.values)
+        self.assertEqual(result.values['grid_export_power'],0)
+
+    async def test_confirmed_flow_switches_the_opposite_direction_to_zero(self):
+        await self.fixture()
+        flow = self.browser.page.get_by_test_id('power-flow-live-image')
+        for label, value, direction, expected in (
+            ('Exportieren', '9.6kW', 'grid_export_power', 9600),
+            ('Importiert', '730 W', 'grid_import_power', 730),
+            ('To Grid', '2,4 kW', 'grid_export_power', 2400),
+            ('From Grid', '0.5 kW', 'grid_import_power', 500),
+        ):
+            with self.subTest(label=label):
+                await flow.evaluate('(el, text) => el.querySelector("svg").innerHTML = text', f'<text>{label}</text><text>{value}</text><text>Last</text><text>730 W</text>')
+                result = await self.scraper.live(self.browser.page)
+                self.assertEqual(result.values[direction],expected)
+                opposite = ({'grid_import_power', 'grid_export_power'} - {direction}).pop()
+                self.assertEqual(result.values[opposite],0)
+                self.assertEqual(result.values['consumption_power'],730)
+
+    async def test_unknown_invalid_or_ambiguous_flows_never_invent_zero(self):
+        await self.fixture()
+        flow = self.browser.page.get_by_test_id('power-flow-live-image')
+        for text in (
+            'Netz 9.6kW Last 730 W',
+            'Exportieren Loading Last 730 W',
+            'Exportieren -9.6kW Last 730 W',
+            'Exportieren 9.6kWh Last 730 W',
+            'Exportieren 9.6kW Importiert Loading Last 730 W',
+            'Exportieren 9.6kW Exportieren 8kW Last 730 W',
+            'UnbekannterExport 9.6kW Last 730 W',
+        ):
+            with self.subTest(text=text):
+                await flow.evaluate('(el, text) => el.querySelector("svg text").textContent = text', text)
+                await flow.locator('svg text').evaluate_all('els => els.slice(1).forEach(el => el.remove())')
+                result = await self.scraper.live(self.browser.page)
+                self.assertNotIn('grid_import_power',result.values)
+                self.assertNotIn('grid_export_power',result.values)
+
+    async def test_zero_flow_does_not_establish_an_unlabelled_direction(self):
+        await self.fixture()
+        await self.browser.page.get_by_test_id('power-flow-live-image').evaluate('el => el.querySelector("svg").innerHTML = "<text>Exportieren 0 W Last 730 W</text>"')
+        result = await self.scraper.live(self.browser.page)
+        self.assertEqual(result.values['grid_export_power'],0)
+        self.assertNotIn('grid_import_power',result.values)
+
+    async def test_hidden_opposite_flow_is_ignored_and_explicit_values_are_preserved(self):
+        await self.fixture()
+        flow = self.browser.page.get_by_test_id('power-flow-live-image')
+        await flow.evaluate('(el, html) => el.querySelector("svg").innerHTML = html', '<text>Exportieren 9.6kW Last 730 W</text><text style="display:none">Importiert Loading</text>')
+        result = await self.scraper.live(self.browser.page)
+        self.assertEqual(result.values['grid_export_power'],9600)
+        self.assertEqual(result.values['grid_import_power'],0)
+        await flow.evaluate('el => el.querySelector("svg").innerHTML = "<text>Exportieren 0 W Importiert 730 W Last 730 W</text>"')
+        result = await self.scraper.live(self.browser.page)
+        self.assertEqual(result.values['grid_import_power'],730)
+        self.assertEqual(result.values['grid_export_power'],0)
 
     async def test_refuses_wrong_range_and_incomplete_energy_distribution(self):
         await self.fixture()

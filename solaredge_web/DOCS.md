@@ -88,7 +88,7 @@ Alle folgenden Standard-IDs beginnen mit `sensor.solaredge_`; bei Namenskonflikt
 | `self_consumption_energy_total` | kWh, zusätzlicher PV-Eigenverbrauch |
 | `energy_today` | kWh, Tagesanzeige ohne Zähler-State-Class |
 | `pv_power`, `consumption_power` | W, aktuelle PV-Leistung und Last |
-| `grid_import_power`, `grid_export_power` | W, nur tatsächlich beschriftete Flussrichtung |
+| `grid_import_power`, `grid_export_power` | W, beschriftete Flussrichtung; Gegenrichtung 0 bei eindeutig erkanntem positivem Netzfluss |
 | `outside_temperature` | °C |
 | `site_status` | Sichtbarer SolarEdge-Status |
 | `last_update` | Sichtbarer relativer Aktualisierungstext |
@@ -96,7 +96,7 @@ Alle folgenden Standard-IDs beginnen mit `sensor.solaredge_`; bei Namenskonflikt
 | `scraper_status`, `scraper_response_time` | Status und Abrufdauer in Sekunden |
 | `energy_gap_count` | Fehlende Tage außerhalb des Nachholfensters |
 
-Für die tagesgenaue Zuordnung im Energie-Dashboard die drei importierten **Tagesgenau**-Quellen auswählen; [Anleitung](https://github.com/dr8ecker/solaredge_web/blob/main/solaredge_web/HISTORY.md). Die ersten drei MQTT-Gesamtzähler bleiben eine Alternative mit Zuordnung zum Abrufzeitpunkt. Sie besitzen `energy`, `total` und `kWh`, ohne regelmäßige Resets. Den Gesamt-Hausverbrauch nicht zusätzlich als einzelnes Gerät zählen. Ohne Import-/Export-Label bleibt der jeweilige Leistungssensor unavailable, statt die Gegenrichtung als erfundene Null zu veröffentlichen. Die Energiewerte stammen davon unabhängig aus Tages-Tooltips. Keine Batteriesensoren. Details: [ENERGY-DESIGN.md](https://github.com/dr8ecker/solaredge_web/blob/main/solaredge_web/ENERGY-DESIGN.md).
+Für die tagesgenaue Zuordnung im Energie-Dashboard die drei importierten **Tagesgenau**-Quellen auswählen; [Anleitung](https://github.com/dr8ecker/solaredge_web/blob/main/solaredge_web/HISTORY.md). Die ersten drei MQTT-Gesamtzähler bleiben eine Alternative mit Zuordnung zum Abrufzeitpunkt. Sie besitzen `energy`, `total` und `kWh`, ohne regelmäßige Resets. Den Gesamt-Hausverbrauch nicht zusätzlich als einzelnes Gerät zählen. Ab 0.3.3 erhält die nicht angezeigte Gegenrichtung **0 W**, wenn genau eine Import-/Export-Richtung mit gültiger positiver Leistung sichtbar ist: Einspeisung bedeutet 0 W Netzbezug, Netzbezug bedeutet 0 W Einspeisung. Fehlende, unlesbare, negative oder mehrdeutige Flussangaben bleiben unavailable. Eine allein angezeigte 0 W erlaubt keine Aussage über eine unbeschriftete Gegenrichtung. Die Energiewerte stammen davon unabhängig aus Tages-Tooltips. Keine Batteriesensoren. Details: [ENERGY-DESIGN.md](https://github.com/dr8ecker/solaredge_web/blob/main/solaredge_web/ENERGY-DESIGN.md).
 
 ## Tagesbilanz, Datenzustand und Historie
 
