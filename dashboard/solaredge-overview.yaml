@@ -682,7 +682,7 @@ card:
           -webkit-backdrop-filter: none !important;
           border: 0 !important;
         }
-        :host { --grid-card-gap: 12px; }
+        :host { --grid-card-gap: 12px; padding-top: 12px !important; }
   - type: markdown
     content: '#### Leistung beim letzten Abruf'
     card_mod:
