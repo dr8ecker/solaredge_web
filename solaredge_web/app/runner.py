@@ -18,6 +18,7 @@ from .login import SolarEdgeLogin, ManualLoginRequired, AuthenticationError
 from .mqtt import MqttPublisher
 from .navigator import SolarEdgeNavigator
 from .scraper import SolarEdgeScraper
+from .schedule import wait_for_poll
 from .diagnostics import failure_details, runtime_details
 
 LOGGER = logging.getLogger(__name__)
@@ -123,7 +124,7 @@ async def run_normal(config, *, once=False):
         while not stop.is_set():
             started = time.monotonic()
             attempt = datetime.now(timezone.utc).isoformat()
-            health.update(status='scraping', last_attempt=attempt)
+            health.update(status='scraping', last_attempt=attempt, next_poll_at=None)
             if publisher:
                 publisher.update({'scraper_last_attempt':attempt, 'scraper_status':'scraping'})
             loading = asyncio.create_task(cycle())
@@ -170,7 +171,7 @@ async def run_normal(config, *, once=False):
                     await asyncio.to_thread(packet.wait_for_publish, 10)
                 if once or config.mode == 'discovery':
                     return 0
-                await wait_or_stop(stop, config.poll_interval, health)
+                await wait_for_poll(stop, config.poll_interval, config.site_timezone, health)
             except RateLimited:
                 LOGGER.warning('SolarEdge UI rate limit; waiting at least 30 minutes')
                 health.update(status='rate_limited', consecutive_failures=config.max_retries)

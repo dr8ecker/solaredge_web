@@ -1,9 +1,11 @@
-# Optionale zweite manuelle Karte: zusammen mit der Übersicht alle Sensoren ab Add-on 0.3.0.
-type: entities
-title: SolarEdge · Zähler & Details
-show_header_toggle: false
-state_color: false
-entities:
+# Transparente manuelle Detailkarte, benötigt card-mod wie die Übersicht.
+type: custom:mod-card
+card:
+  type: entities
+  title: SolarEdge · Zähler & Details
+  show_header_toggle: false
+  state_color: false
+  entities:
   - type: section
     label: Energiezähler seit Einrichtung · kWh
   - entity: sensor.solaredge_pv_energy_total
@@ -55,6 +57,78 @@ entities:
   - entity: sensor.solaredge_energy_gap_count
     name: Fehlende Energietage
     icon: mdi:calendar-alert
+  card_mod:
+    style: |
+      :host(:not([hidden])), ha-card:not([hidden]) {
+        background: transparent !important;
+        background-image: none !important;
+        filter: none !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border-radius: 20px !important;
+        --ha-card-background: transparent !important;
+        --ha-card-box-shadow: none !important;
+        --ha-card-border-width: 0px !important;
+      }
+      :host::before, :host::after, ha-card::before, ha-card::after {
+        content: none !important;
+        display: none !important;
+        background: none !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: 0 !important;
+      }
+      ha-card:not([hidden]) { border-radius: 24px !important; overflow: hidden; }
 card_mod:
-  style: |
-    :host, ha-card { border-radius: 24px; border: 1px solid var(--divider-color); }
+  style:
+    .: |
+      :host(:not([hidden])), ha-card:not([hidden]) {
+        background: transparent !important;
+        background-image: none !important;
+        filter: none !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border-radius: 20px !important;
+        --ha-card-background: transparent !important;
+        --ha-card-box-shadow: none !important;
+        --ha-card-border-width: 0px !important;
+      }
+      :host::before, :host::after, ha-card::before, ha-card::after {
+        content: none !important;
+        display: none !important;
+        background: none !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: 0 !important;
+      }
+      ha-card:not([hidden]) { border-radius: 24px !important; overflow: hidden; }
+    hui-entities-card $: |
+      :host(:not([hidden])), ha-card:not([hidden]) {
+        background: transparent !important;
+        background-image: none !important;
+        filter: none !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border-radius: 20px !important;
+        --ha-card-background: transparent !important;
+        --ha-card-box-shadow: none !important;
+        --ha-card-border-width: 0px !important;
+      }
+      :host::before, :host::after, ha-card::before, ha-card::after {
+        content: none !important;
+        display: none !important;
+        background: none !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: 0 !important;
+      }
+      ha-card:not([hidden]) { border-radius: 24px !important; overflow: hidden; }

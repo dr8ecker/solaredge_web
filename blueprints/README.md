@@ -13,7 +13,7 @@ Voraussetzungen: Add-on ab **0.3.0** und ein Handy, das über die Home-Assistant
 
 Die Vorlage meldet länger anhaltende Abruffehler, zu alte Daten, erforderliche Anmeldung, ein nicht erreichbares Add-on/MQTT sowie Fehler beim Historienimport. Einzelne nicht angezeigte Netzrichtungen und eine reguläre PV-Leistung von null lösen keine Meldung aus.
 
-Der Sensor **Datenzustand** wird vom laufenden Add-on spätestens alle zehn Sekunden überprüft. Seine Altersschwelle beträgt mindestens 15 Minuten bzw. drei Abrufintervalle, je nachdem, welcher Wert größer ist. Beim Standard von 30 Minuten sind das 90 Minuten. Die zusätzliche Wartezeit der Automation verhindert Meldungen bei kurzen Neustarts.
+Der Sensor **Datenzustand** wird vom laufenden Add-on spätestens alle zehn Sekunden überprüft. Seine Altersschwelle beträgt mindestens 15 Minuten bzw. drei Abrufintervalle, je nachdem, welcher Wert größer ist. Mit dem Standard ab 0.3.1 (`poll_interval: 900`, alle 15 Minuten) sind das **45 Minuten**. Bestehende Installationen behalten ihre gespeicherte Einstellung: Bei `1800` sind es weiterhin 90 Minuten, bis du das Intervall auf `900` änderst und das Add-on neu startest. Die zusätzliche Wartezeit der Automation verhindert Meldungen bei kurzen Neustarts.
 
 Pro anhaltendem Vorfall sendet die laufende Automation eine Warnung und wartet auf erfolgreiche Erholung. Erst dann kann ein neuer Vorfall eine neue Warnung auslösen. Eine Entwarnung ersetzt auf unterstützten Handys die vorherige Meldung. Nach einem HA-Neustart oder dem Neuladen der Automationen beginnt die Wartezeit neu; ein weiterhin bestehender Vorfall kann dann erneut gemeldet werden.
 

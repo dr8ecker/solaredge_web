@@ -1,5 +1,4 @@
-# Als eine manuelle Karte einfügen. Benötigt Add-on ab 0.3.0, Mushroom, mini-graph-card und card-mod.
-# Design: gemeinsame Fläche, Tagesbilanz und großzügige Abstände.
+# Transparente manuelle Karte mit abgerundeten Kacheln.
 type: custom:mod-card
 card:
   type: vertical-stack
@@ -13,13 +12,27 @@ card:
     card_mod:
       style:
         .: |
-          ha-card {
-            background: none !important;
+          :host(:not([hidden])), ha-card:not([hidden]) {
+            background: transparent !important;
+            background-image: none !important;
+            filter: none !important;
             border: 0 !important;
             box-shadow: none !important;
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
-            border-radius: 0 !important;
+            border-radius: 20px !important;
+            --ha-card-background: transparent !important;
+            --ha-card-box-shadow: none !important;
+            --ha-card-border-width: 0px !important;
+          }
+          :host::before, :host::after, ha-card::before, ha-card::after {
+            content: none !important;
+            display: none !important;
+            background: none !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            border: 0 !important;
           }
           ha-card { padding: 0 !important; }
           ha-markdown { padding: 0 !important; }
@@ -70,35 +83,205 @@ card:
         action: navigate
         navigation_path: /energy
     card_mod:
-      style: |
-        ha-card {
-          background: none !important;
-          border: 0 !important;
-          box-shadow: none !important;
-          backdrop-filter: none !important;
-          -webkit-backdrop-filter: none !important;
-          border-radius: 0 !important;
-        }
-        :host {
-          --mush-chip-background: transparent;
-          --mush-chip-border-width: 0;
-          --mush-chip-box-shadow: none;
-          --mush-chip-spacing: 12px;
-          --mush-chip-height: 34px;
-        }
-        ha-card { padding: 10px 0 0 !important; }
+      style:
+        .: |
+          :host(:not([hidden])), ha-card:not([hidden]) {
+            background: transparent !important;
+            background-image: none !important;
+            filter: none !important;
+            border: 0 !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            border-radius: 20px !important;
+            --ha-card-background: transparent !important;
+            --ha-card-box-shadow: none !important;
+            --ha-card-border-width: 0px !important;
+          }
+          :host::before, :host::after, ha-card::before, ha-card::after {
+            content: none !important;
+            display: none !important;
+            background: none !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            border: 0 !important;
+          }
+          :host {
+            --mush-chip-background: transparent;
+            --mush-chip-border-width: 0;
+            --mush-chip-box-shadow: none;
+            --mush-chip-spacing: 12px;
+            --mush-chip-height: 34px;
+          }
+          ha-card { padding: 10px 0 0 !important; }
+        mushroom-template-chip $:
+          .: |
+            :host(:not([hidden])), ha-card:not([hidden]) {
+              background: transparent !important;
+              background-image: none !important;
+              filter: none !important;
+              border: 0 !important;
+              box-shadow: none !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+              border-radius: 20px !important;
+              --ha-card-background: transparent !important;
+              --ha-card-box-shadow: none !important;
+              --ha-card-border-width: 0px !important;
+            }
+            :host::before, :host::after, ha-card::before, ha-card::after {
+              content: none !important;
+              display: none !important;
+              background: none !important;
+              box-shadow: none !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+              border: 0 !important;
+            }
+          mushroom-chip $: |
+            :host(:not([hidden])), ha-card:not([hidden]) {
+              background: transparent !important;
+              background-image: none !important;
+              filter: none !important;
+              border: 0 !important;
+              box-shadow: none !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+              border-radius: 20px !important;
+              --ha-card-background: transparent !important;
+              --ha-card-box-shadow: none !important;
+              --ha-card-border-width: 0px !important;
+            }
+            :host::before, :host::after, ha-card::before, ha-card::after {
+              content: none !important;
+              display: none !important;
+              background: none !important;
+              box-shadow: none !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+              border: 0 !important;
+            }
+        mushroom-entity-chip $:
+          .: |
+            :host(:not([hidden])), ha-card:not([hidden]) {
+              background: transparent !important;
+              background-image: none !important;
+              filter: none !important;
+              border: 0 !important;
+              box-shadow: none !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+              border-radius: 20px !important;
+              --ha-card-background: transparent !important;
+              --ha-card-box-shadow: none !important;
+              --ha-card-border-width: 0px !important;
+            }
+            :host::before, :host::after, ha-card::before, ha-card::after {
+              content: none !important;
+              display: none !important;
+              background: none !important;
+              box-shadow: none !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+              border: 0 !important;
+            }
+          mushroom-chip $: |
+            :host(:not([hidden])), ha-card:not([hidden]) {
+              background: transparent !important;
+              background-image: none !important;
+              filter: none !important;
+              border: 0 !important;
+              box-shadow: none !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+              border-radius: 20px !important;
+              --ha-card-background: transparent !important;
+              --ha-card-box-shadow: none !important;
+              --ha-card-border-width: 0px !important;
+            }
+            :host::before, :host::after, ha-card::before, ha-card::after {
+              content: none !important;
+              display: none !important;
+              background: none !important;
+              box-shadow: none !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+              border: 0 !important;
+            }
+        mushroom-action-chip $:
+          .: |
+            :host(:not([hidden])), ha-card:not([hidden]) {
+              background: transparent !important;
+              background-image: none !important;
+              filter: none !important;
+              border: 0 !important;
+              box-shadow: none !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+              border-radius: 20px !important;
+              --ha-card-background: transparent !important;
+              --ha-card-box-shadow: none !important;
+              --ha-card-border-width: 0px !important;
+            }
+            :host::before, :host::after, ha-card::before, ha-card::after {
+              content: none !important;
+              display: none !important;
+              background: none !important;
+              box-shadow: none !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+              border: 0 !important;
+            }
+          mushroom-chip $: |
+            :host(:not([hidden])), ha-card:not([hidden]) {
+              background: transparent !important;
+              background-image: none !important;
+              filter: none !important;
+              border: 0 !important;
+              box-shadow: none !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+              border-radius: 20px !important;
+              --ha-card-background: transparent !important;
+              --ha-card-box-shadow: none !important;
+              --ha-card-border-width: 0px !important;
+            }
+            :host::before, :host::after, ha-card::before, ha-card::after {
+              content: none !important;
+              display: none !important;
+              background: none !important;
+              box-shadow: none !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+              border: 0 !important;
+            }
   - type: markdown
     content: '#### Deine Tagesbilanz'
     card_mod:
       style:
         .: |
-          ha-card {
-            background: none !important;
+          :host(:not([hidden])), ha-card:not([hidden]) {
+            background: transparent !important;
+            background-image: none !important;
+            filter: none !important;
             border: 0 !important;
             box-shadow: none !important;
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
-            border-radius: 0 !important;
+            border-radius: 20px !important;
+            --ha-card-background: transparent !important;
+            --ha-card-box-shadow: none !important;
+            --ha-card-border-width: 0px !important;
+          }
+          :host::before, :host::after, ha-card::before, ha-card::after {
+            content: none !important;
+            display: none !important;
+            background: none !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            border: 0 !important;
           }
           ha-card { padding: 24px 0 8px !important; }
           ha-markdown { padding: 0 !important; }
@@ -121,15 +304,29 @@ card:
       card_mod:
         style:
           .: |
-            ha-card {
-              background: none !important;
+            :host(:not([hidden])), ha-card:not([hidden]) {
+              background: transparent !important;
+              background-image: none !important;
+              filter: none !important;
               border: 0 !important;
               box-shadow: none !important;
               backdrop-filter: none !important;
               -webkit-backdrop-filter: none !important;
-              border-radius: 0 !important;
+              border-radius: 20px !important;
+              --ha-card-background: transparent !important;
+              --ha-card-box-shadow: none !important;
+              --ha-card-border-width: 0px !important;
             }
-            ha-card {
+            :host::before, :host::after, ha-card::before, ha-card::after {
+              content: none !important;
+              display: none !important;
+              background: none !important;
+              box-shadow: none !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+              border: 0 !important;
+            }
+            ha-card:not([hidden]) {
               padding: 8px 4px !important;
               --card-primary-font-size: 23px;
               --card-primary-line-height: 30px;
@@ -140,9 +337,16 @@ card:
               --spacing: 8px;
               --icon-border-radius: 14px;
             }
+            ha-card:not([hidden]) {
+              border: 1px solid color-mix(in srgb, var(--primary-text-color) 16%, transparent) !important;
+              --shape-color: transparent !important;
+              --shape-color-disabled: transparent !important;
+            }
           mushroom-state-info$: |
             .container { gap: 2px; }
             .primary, .secondary { white-space: normal !important; overflow-wrap: anywhere; text-overflow: clip !important; }
+          mushroom-shape-icon$: |
+            .shape { background: transparent !important; box-shadow: none !important; }
     - type: custom:mushroom-entity-card
       entity: sensor.solaredge_self_consumption_energy_today
       name: PV selbst genutzt
@@ -156,15 +360,29 @@ card:
       card_mod:
         style:
           .: |
-            ha-card {
-              background: none !important;
+            :host(:not([hidden])), ha-card:not([hidden]) {
+              background: transparent !important;
+              background-image: none !important;
+              filter: none !important;
               border: 0 !important;
               box-shadow: none !important;
               backdrop-filter: none !important;
               -webkit-backdrop-filter: none !important;
-              border-radius: 0 !important;
+              border-radius: 20px !important;
+              --ha-card-background: transparent !important;
+              --ha-card-box-shadow: none !important;
+              --ha-card-border-width: 0px !important;
             }
-            ha-card {
+            :host::before, :host::after, ha-card::before, ha-card::after {
+              content: none !important;
+              display: none !important;
+              background: none !important;
+              box-shadow: none !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+              border: 0 !important;
+            }
+            ha-card:not([hidden]) {
               padding: 8px 4px !important;
               --card-primary-font-size: 23px;
               --card-primary-line-height: 30px;
@@ -175,9 +393,16 @@ card:
               --spacing: 8px;
               --icon-border-radius: 14px;
             }
+            ha-card:not([hidden]) {
+              border: 1px solid color-mix(in srgb, var(--primary-text-color) 16%, transparent) !important;
+              --shape-color: transparent !important;
+              --shape-color-disabled: transparent !important;
+            }
           mushroom-state-info$: |
             .container { gap: 2px; }
             .primary, .secondary { white-space: normal !important; overflow-wrap: anywhere; text-overflow: clip !important; }
+          mushroom-shape-icon$: |
+            .shape { background: transparent !important; box-shadow: none !important; }
     - type: custom:mushroom-entity-card
       entity: sensor.solaredge_grid_import_energy_today
       name: Netzbezug
@@ -191,15 +416,29 @@ card:
       card_mod:
         style:
           .: |
-            ha-card {
-              background: none !important;
+            :host(:not([hidden])), ha-card:not([hidden]) {
+              background: transparent !important;
+              background-image: none !important;
+              filter: none !important;
               border: 0 !important;
               box-shadow: none !important;
               backdrop-filter: none !important;
               -webkit-backdrop-filter: none !important;
-              border-radius: 0 !important;
+              border-radius: 20px !important;
+              --ha-card-background: transparent !important;
+              --ha-card-box-shadow: none !important;
+              --ha-card-border-width: 0px !important;
             }
-            ha-card {
+            :host::before, :host::after, ha-card::before, ha-card::after {
+              content: none !important;
+              display: none !important;
+              background: none !important;
+              box-shadow: none !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+              border: 0 !important;
+            }
+            ha-card:not([hidden]) {
               padding: 8px 4px !important;
               --card-primary-font-size: 23px;
               --card-primary-line-height: 30px;
@@ -210,9 +449,16 @@ card:
               --spacing: 8px;
               --icon-border-radius: 14px;
             }
+            ha-card:not([hidden]) {
+              border: 1px solid color-mix(in srgb, var(--primary-text-color) 16%, transparent) !important;
+              --shape-color: transparent !important;
+              --shape-color-disabled: transparent !important;
+            }
           mushroom-state-info$: |
             .container { gap: 2px; }
             .primary, .secondary { white-space: normal !important; overflow-wrap: anywhere; text-overflow: clip !important; }
+          mushroom-shape-icon$: |
+            .shape { background: transparent !important; box-shadow: none !important; }
     - type: custom:mushroom-entity-card
       entity: sensor.solaredge_grid_export_energy_today
       name: Einspeisung
@@ -226,15 +472,29 @@ card:
       card_mod:
         style:
           .: |
-            ha-card {
-              background: none !important;
+            :host(:not([hidden])), ha-card:not([hidden]) {
+              background: transparent !important;
+              background-image: none !important;
+              filter: none !important;
               border: 0 !important;
               box-shadow: none !important;
               backdrop-filter: none !important;
               -webkit-backdrop-filter: none !important;
-              border-radius: 0 !important;
+              border-radius: 20px !important;
+              --ha-card-background: transparent !important;
+              --ha-card-box-shadow: none !important;
+              --ha-card-border-width: 0px !important;
             }
-            ha-card {
+            :host::before, :host::after, ha-card::before, ha-card::after {
+              content: none !important;
+              display: none !important;
+              background: none !important;
+              box-shadow: none !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+              border: 0 !important;
+            }
+            ha-card:not([hidden]) {
               padding: 8px 4px !important;
               --card-primary-font-size: 23px;
               --card-primary-line-height: 30px;
@@ -245,11 +505,40 @@ card:
               --spacing: 8px;
               --icon-border-radius: 14px;
             }
+            ha-card:not([hidden]) {
+              border: 1px solid color-mix(in srgb, var(--primary-text-color) 16%, transparent) !important;
+              --shape-color: transparent !important;
+              --shape-color-disabled: transparent !important;
+            }
           mushroom-state-info$: |
             .container { gap: 2px; }
             .primary, .secondary { white-space: normal !important; overflow-wrap: anywhere; text-overflow: clip !important; }
+          mushroom-shape-icon$: |
+            .shape { background: transparent !important; box-shadow: none !important; }
     card_mod:
       style: |
+        :host(:not([hidden])), ha-card:not([hidden]) {
+          background: transparent !important;
+          background-image: none !important;
+          filter: none !important;
+          border: 0 !important;
+          box-shadow: none !important;
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
+          border-radius: 20px !important;
+          --ha-card-background: transparent !important;
+          --ha-card-box-shadow: none !important;
+          --ha-card-border-width: 0px !important;
+        }
+        :host::before, :host::after, ha-card::before, ha-card::after {
+          content: none !important;
+          display: none !important;
+          background: none !important;
+          box-shadow: none !important;
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
+          border: 0 !important;
+        }
         :host { --grid-card-gap: 12px; }
   - type: grid
     columns: 2
@@ -268,18 +557,31 @@ card:
       card_mod:
         style:
           .: |
-            ha-card {
-              background: none !important;
+            :host(:not([hidden])), ha-card:not([hidden]) {
+              background: transparent !important;
+              background-image: none !important;
+              filter: none !important;
               border: 0 !important;
               box-shadow: none !important;
               backdrop-filter: none !important;
               -webkit-backdrop-filter: none !important;
-              border-radius: 0 !important;
+              border-radius: 20px !important;
+              --ha-card-background: transparent !important;
+              --ha-card-box-shadow: none !important;
+              --ha-card-border-width: 0px !important;
             }
-            ha-card {
+            :host::before, :host::after, ha-card::before, ha-card::after {
+              content: none !important;
+              display: none !important;
+              background: none !important;
+              box-shadow: none !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+              border: 0 !important;
+            }
+            ha-card:not([hidden]) {
               padding: 18px 4px !important;
-              border-radius: 18px !important;
-              background: rgba(127, 127, 127, 0.07) !important;
+              border-radius: 20px !important;
               --card-primary-font-size: 25px;
               --card-primary-color: color-mix(in srgb, var(--primary-text-color) 40%, #14b8a6);
               --card-primary-line-height: 30px;
@@ -288,9 +590,16 @@ card:
               --card-secondary-line-height: 20px;
               --icon-size: 30px;
             }
+            ha-card:not([hidden]) {
+              border: 1px solid color-mix(in srgb, var(--primary-text-color) 16%, transparent) !important;
+              --shape-color: transparent !important;
+              --shape-color-disabled: transparent !important;
+            }
           mushroom-state-info$: |
             .container { gap: 2px; }
             .primary, .secondary { white-space: normal !important; overflow-wrap: anywhere; text-overflow: clip !important; }
+          mushroom-shape-icon$: |
+            .shape { background: transparent !important; box-shadow: none !important; }
       icon_type: none
     - type: custom:mushroom-entity-card
       entity: sensor.solaredge_self_consumption_ratio_today
@@ -305,18 +614,31 @@ card:
       card_mod:
         style:
           .: |
-            ha-card {
-              background: none !important;
+            :host(:not([hidden])), ha-card:not([hidden]) {
+              background: transparent !important;
+              background-image: none !important;
+              filter: none !important;
               border: 0 !important;
               box-shadow: none !important;
               backdrop-filter: none !important;
               -webkit-backdrop-filter: none !important;
-              border-radius: 0 !important;
+              border-radius: 20px !important;
+              --ha-card-background: transparent !important;
+              --ha-card-box-shadow: none !important;
+              --ha-card-border-width: 0px !important;
             }
-            ha-card {
+            :host::before, :host::after, ha-card::before, ha-card::after {
+              content: none !important;
+              display: none !important;
+              background: none !important;
+              box-shadow: none !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+              border: 0 !important;
+            }
+            ha-card:not([hidden]) {
               padding: 18px 4px !important;
-              border-radius: 18px !important;
-              background: rgba(127, 127, 127, 0.07) !important;
+              border-radius: 20px !important;
               --card-primary-font-size: 25px;
               --card-primary-color: color-mix(in srgb, var(--primary-text-color) 40%, #f6b44b);
               --card-primary-line-height: 30px;
@@ -325,25 +647,68 @@ card:
               --card-secondary-line-height: 20px;
               --icon-size: 30px;
             }
+            ha-card:not([hidden]) {
+              border: 1px solid color-mix(in srgb, var(--primary-text-color) 16%, transparent) !important;
+              --shape-color: transparent !important;
+              --shape-color-disabled: transparent !important;
+            }
           mushroom-state-info$: |
             .container { gap: 2px; }
             .primary, .secondary { white-space: normal !important; overflow-wrap: anywhere; text-overflow: clip !important; }
+          mushroom-shape-icon$: |
+            .shape { background: transparent !important; box-shadow: none !important; }
       icon_type: none
     card_mod:
       style: |
+        :host(:not([hidden])), ha-card:not([hidden]) {
+          background: transparent !important;
+          background-image: none !important;
+          filter: none !important;
+          border: 0 !important;
+          box-shadow: none !important;
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
+          border-radius: 20px !important;
+          --ha-card-background: transparent !important;
+          --ha-card-box-shadow: none !important;
+          --ha-card-border-width: 0px !important;
+        }
+        :host::before, :host::after, ha-card::before, ha-card::after {
+          content: none !important;
+          display: none !important;
+          background: none !important;
+          box-shadow: none !important;
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
+          border: 0 !important;
+        }
         :host { --grid-card-gap: 12px; }
   - type: markdown
     content: '#### Leistung beim letzten Abruf'
     card_mod:
       style:
         .: |
-          ha-card {
-            background: none !important;
+          :host(:not([hidden])), ha-card:not([hidden]) {
+            background: transparent !important;
+            background-image: none !important;
+            filter: none !important;
             border: 0 !important;
             box-shadow: none !important;
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
-            border-radius: 0 !important;
+            border-radius: 20px !important;
+            --ha-card-background: transparent !important;
+            --ha-card-box-shadow: none !important;
+            --ha-card-border-width: 0px !important;
+          }
+          :host::before, :host::after, ha-card::before, ha-card::after {
+            content: none !important;
+            display: none !important;
+            background: none !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            border: 0 !important;
           }
           ha-card { padding: 28px 0 8px !important; }
           ha-markdown { padding: 0 !important; }
@@ -366,15 +731,29 @@ card:
       card_mod:
         style:
           .: |
-            ha-card {
-              background: none !important;
+            :host(:not([hidden])), ha-card:not([hidden]) {
+              background: transparent !important;
+              background-image: none !important;
+              filter: none !important;
               border: 0 !important;
               box-shadow: none !important;
               backdrop-filter: none !important;
               -webkit-backdrop-filter: none !important;
-              border-radius: 0 !important;
+              border-radius: 20px !important;
+              --ha-card-background: transparent !important;
+              --ha-card-box-shadow: none !important;
+              --ha-card-border-width: 0px !important;
             }
-            ha-card {
+            :host::before, :host::after, ha-card::before, ha-card::after {
+              content: none !important;
+              display: none !important;
+              background: none !important;
+              box-shadow: none !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+              border: 0 !important;
+            }
+            ha-card:not([hidden]) {
               padding: 12px 0 !important;
               --card-primary-font-size: 17px;
               --card-primary-line-height: 26px;
@@ -383,9 +762,16 @@ card:
               --icon-size: 34px;
               --spacing: 6px;
             }
+            ha-card:not([hidden]) {
+              border: 1px solid color-mix(in srgb, var(--primary-text-color) 16%, transparent) !important;
+              --shape-color: transparent !important;
+              --shape-color-disabled: transparent !important;
+            }
           mushroom-state-info$: |
             .container { gap: 2px; }
             .primary, .secondary { white-space: normal !important; overflow-wrap: anywhere; text-overflow: clip !important; }
+          mushroom-shape-icon$: |
+            .shape { background: transparent !important; box-shadow: none !important; }
     - type: custom:mushroom-entity-card
       entity: sensor.solaredge_consumption_power
       name: Haus
@@ -399,15 +785,29 @@ card:
       card_mod:
         style:
           .: |
-            ha-card {
-              background: none !important;
+            :host(:not([hidden])), ha-card:not([hidden]) {
+              background: transparent !important;
+              background-image: none !important;
+              filter: none !important;
               border: 0 !important;
               box-shadow: none !important;
               backdrop-filter: none !important;
               -webkit-backdrop-filter: none !important;
-              border-radius: 0 !important;
+              border-radius: 20px !important;
+              --ha-card-background: transparent !important;
+              --ha-card-box-shadow: none !important;
+              --ha-card-border-width: 0px !important;
             }
-            ha-card {
+            :host::before, :host::after, ha-card::before, ha-card::after {
+              content: none !important;
+              display: none !important;
+              background: none !important;
+              box-shadow: none !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+              border: 0 !important;
+            }
+            ha-card:not([hidden]) {
               padding: 12px 0 !important;
               --card-primary-font-size: 17px;
               --card-primary-line-height: 26px;
@@ -416,9 +816,16 @@ card:
               --icon-size: 34px;
               --spacing: 6px;
             }
+            ha-card:not([hidden]) {
+              border: 1px solid color-mix(in srgb, var(--primary-text-color) 16%, transparent) !important;
+              --shape-color: transparent !important;
+              --shape-color-disabled: transparent !important;
+            }
           mushroom-state-info$: |
             .container { gap: 2px; }
             .primary, .secondary { white-space: normal !important; overflow-wrap: anywhere; text-overflow: clip !important; }
+          mushroom-shape-icon$: |
+            .shape { background: transparent !important; box-shadow: none !important; }
     - type: custom:mushroom-entity-card
       entity: sensor.solaredge_grid_import_power
       name: Netzbezug
@@ -432,15 +839,29 @@ card:
       card_mod:
         style:
           .: |
-            ha-card {
-              background: none !important;
+            :host(:not([hidden])), ha-card:not([hidden]) {
+              background: transparent !important;
+              background-image: none !important;
+              filter: none !important;
               border: 0 !important;
               box-shadow: none !important;
               backdrop-filter: none !important;
               -webkit-backdrop-filter: none !important;
-              border-radius: 0 !important;
+              border-radius: 20px !important;
+              --ha-card-background: transparent !important;
+              --ha-card-box-shadow: none !important;
+              --ha-card-border-width: 0px !important;
             }
-            ha-card {
+            :host::before, :host::after, ha-card::before, ha-card::after {
+              content: none !important;
+              display: none !important;
+              background: none !important;
+              box-shadow: none !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+              border: 0 !important;
+            }
+            ha-card:not([hidden]) {
               padding: 12px 0 !important;
               --card-primary-font-size: 17px;
               --card-primary-line-height: 26px;
@@ -449,9 +870,16 @@ card:
               --icon-size: 34px;
               --spacing: 6px;
             }
+            ha-card:not([hidden]) {
+              border: 1px solid color-mix(in srgb, var(--primary-text-color) 16%, transparent) !important;
+              --shape-color: transparent !important;
+              --shape-color-disabled: transparent !important;
+            }
           mushroom-state-info$: |
             .container { gap: 2px; }
             .primary, .secondary { white-space: normal !important; overflow-wrap: anywhere; text-overflow: clip !important; }
+          mushroom-shape-icon$: |
+            .shape { background: transparent !important; box-shadow: none !important; }
     - type: custom:mushroom-entity-card
       entity: sensor.solaredge_grid_export_power
       name: Einspeisung
@@ -465,15 +893,29 @@ card:
       card_mod:
         style:
           .: |
-            ha-card {
-              background: none !important;
+            :host(:not([hidden])), ha-card:not([hidden]) {
+              background: transparent !important;
+              background-image: none !important;
+              filter: none !important;
               border: 0 !important;
               box-shadow: none !important;
               backdrop-filter: none !important;
               -webkit-backdrop-filter: none !important;
-              border-radius: 0 !important;
+              border-radius: 20px !important;
+              --ha-card-background: transparent !important;
+              --ha-card-box-shadow: none !important;
+              --ha-card-border-width: 0px !important;
             }
-            ha-card {
+            :host::before, :host::after, ha-card::before, ha-card::after {
+              content: none !important;
+              display: none !important;
+              background: none !important;
+              box-shadow: none !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+              border: 0 !important;
+            }
+            ha-card:not([hidden]) {
               padding: 12px 0 !important;
               --card-primary-font-size: 17px;
               --card-primary-line-height: 26px;
@@ -482,11 +924,40 @@ card:
               --icon-size: 34px;
               --spacing: 6px;
             }
+            ha-card:not([hidden]) {
+              border: 1px solid color-mix(in srgb, var(--primary-text-color) 16%, transparent) !important;
+              --shape-color: transparent !important;
+              --shape-color-disabled: transparent !important;
+            }
           mushroom-state-info$: |
             .container { gap: 2px; }
             .primary, .secondary { white-space: normal !important; overflow-wrap: anywhere; text-overflow: clip !important; }
+          mushroom-shape-icon$: |
+            .shape { background: transparent !important; box-shadow: none !important; }
     card_mod:
       style: |
+        :host(:not([hidden])), ha-card:not([hidden]) {
+          background: transparent !important;
+          background-image: none !important;
+          filter: none !important;
+          border: 0 !important;
+          box-shadow: none !important;
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
+          border-radius: 20px !important;
+          --ha-card-background: transparent !important;
+          --ha-card-box-shadow: none !important;
+          --ha-card-border-width: 0px !important;
+        }
+        :host::before, :host::after, ha-card::before, ha-card::after {
+          content: none !important;
+          display: none !important;
+          background: none !important;
+          box-shadow: none !important;
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
+          border: 0 !important;
+        }
         :host { --grid-card-gap: 12px; }
   - type: custom:mini-graph-card
     name: Verlauf · 24 Stunden
@@ -513,17 +984,31 @@ card:
       state: false
       labels: true
       legend: true
-      fill: fade
+      fill: false
       points: hover
     card_mod:
       style: |
-        ha-card {
-          background: none !important;
+        :host(:not([hidden])), ha-card:not([hidden]) {
+          background: transparent !important;
+          background-image: none !important;
+          filter: none !important;
           border: 0 !important;
           box-shadow: none !important;
           backdrop-filter: none !important;
           -webkit-backdrop-filter: none !important;
-          border-radius: 0 !important;
+          border-radius: 20px !important;
+          --ha-card-background: transparent !important;
+          --ha-card-box-shadow: none !important;
+          --ha-card-border-width: 0px !important;
+        }
+        :host::before, :host::after, ha-card::before, ha-card::after {
+          content: none !important;
+          display: none !important;
+          background: none !important;
+          box-shadow: none !important;
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
+          border: 0 !important;
         }
         ha-card { padding-top: 24px !important; }
         .header { padding: 0 0 16px !important; font-size: 13px; }
@@ -547,13 +1032,27 @@ card:
     card_mod:
       style:
         .: |
-          ha-card {
-            background: none !important;
+          :host(:not([hidden])), ha-card:not([hidden]) {
+            background: transparent !important;
+            background-image: none !important;
+            filter: none !important;
             border: 0 !important;
             box-shadow: none !important;
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
-            border-radius: 0 !important;
+            border-radius: 20px !important;
+            --ha-card-background: transparent !important;
+            --ha-card-box-shadow: none !important;
+            --ha-card-border-width: 0px !important;
+          }
+          :host::before, :host::after, ha-card::before, ha-card::after {
+            content: none !important;
+            display: none !important;
+            background: none !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            border: 0 !important;
           }
           ha-card { padding: 20px 0 0 !important; }
           ha-markdown { padding: 0 !important; }
@@ -562,23 +1061,38 @@ card:
 card_mod:
   style:
     .: |
+      :host(:not([hidden])), ha-card:not([hidden]) {
+        background: transparent !important;
+        background-image: none !important;
+        filter: none !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border-radius: 20px !important;
+        --ha-card-background: transparent !important;
+        --ha-card-box-shadow: none !important;
+        --ha-card-border-width: 0px !important;
+      }
+      :host::before, :host::after, ha-card::before, ha-card::after {
+        content: none !important;
+        display: none !important;
+        background: none !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: 0 !important;
+      }
       :host {
-        --ha-card-background: transparent;
-        --ha-card-border-width: 0px;
-        --ha-card-box-shadow: none;
         --vertical-stack-card-gap: 0px;
       }
-      ha-card {
+      ha-card:not([hidden]) {
         padding: 26px 24px 20px !important;
-        border-radius: 28px !important;
+        border-radius: 24px !important;
         overflow: hidden !important;
-        border: 1px solid var(--divider-color) !important;
-        background: radial-gradient(ellipse at top right, rgba(246, 180, 75, 0.10), transparent 60%),
-                    var(--card-background-color, #1c1c1c) !important;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08) !important;
       }
       @media (max-width: 400px) {
-        ha-card { padding: 22px 16px 16px !important; }
+        ha-card:not([hidden]) { padding: 22px 16px 16px !important; }
       }
     hui-vertical-stack-card $:
       hui-markdown-card $:

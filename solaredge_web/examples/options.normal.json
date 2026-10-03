@@ -2,7 +2,7 @@
   "solar_edge_username": "",
   "solar_edge_password": "",
   "plant_name": "Spaeth",
-  "poll_interval": 1800,
+  "poll_interval": 900,
   "headless": true,
   "debug": false,
   "mode": "normal",

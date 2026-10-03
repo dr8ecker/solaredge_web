@@ -34,7 +34,7 @@ class Config:
     solar_edge_username: str = field(default="", repr=False)
     solar_edge_password: str = field(default="", repr=False)
     plant_name: str = "Spaeth"
-    poll_interval: int = 1800
+    poll_interval: int = 900
     headless: bool = True
     debug: bool = False
     mode: str = "normal"

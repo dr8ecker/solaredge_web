@@ -4,7 +4,7 @@ Das Add-on kann seine gespeicherten Energietage direkt in die Statistik von Home
 
 ## Einmal einrichten
 
-1. Das Add-on auf **0.3.0** aktualisieren und starten. `history_import: true` ist die Standardeinstellung.
+1. Das Add-on auf **0.3.1** aktualisieren und starten; der Historienimport wird ab 0.3.0 unterstützt. `history_import: true` ist die Standardeinstellung.
 2. Beim Gerät **SolarEdge Web Scraper** den Sensor **Historienimport** prüfen. Nach einem erfolgreichen Abruf soll er `ok` anzeigen.
 3. **Einstellungen → Dashboards → Energie** öffnen und die bisherigen SolarEdge-Quellen durch folgende Statistiken ersetzen. In der Auswahl nach **Tagesgenau** suchen; hinter dem Namen steht dein Anlagenname.
 
@@ -23,12 +23,14 @@ In Home Assistant 2026.9.4 unterstützen externe Energiestatistiken keinen direk
 ## Was zeitlich genau ist
 
 - **Tage:** Energiemengen gehören zum ausgelesenen SolarEdge-Tag. Auch nachgeholte Mengen und spätere Aufwärtskorrekturen bleiben dort.
-- **Stunden:** Neue Zuwächse erscheinen in der Stunde, in der sie beobachtet wurden. Die 30-Minuten-Abfrage liefert keine lückenlose Leistungskurve.
+- **Stunden:** Neue Zuwächse erscheinen in der Stunde, in der sie beobachtet wurden. Auch eine Abfrage alle 15 Minuten liefert keine lückenlose Leistungskurve.
 - **Nachgeholte Tage / alte Daten ohne Stundenbeobachtungen:** Die bekannte Tagesmenge wird in der letzten Stunde ihres Tages verbucht. Eine unbekannte Stundenverteilung wird nicht rekonstruiert.
 - **Erster Abruf eines Tages:** Bereits vor diesem Abruf erzeugte oder verbrauchte Energie gehört zum richtigen Tag, kann aber nicht nachträglich auf dessen einzelne Stunden verteilt werden.
 - **Zeitzone:** Verwendet `site_timezone`; Home Assistant sollte dieselbe Zeitzone nutzen. Europe/Berlin einschließlich 23- und 25-Stunden-Tagen ist geprüft. Zeitzonen mit Mitternacht zwischen vollen UTC-Stunden werden für diesen Import abgelehnt, statt falsch zugeordnet.
 
 Der Import nutzt die vorhandenen gespeicherten Tage. Er startet keinen zusätzlichen SolarEdge-Historienlauf. Beim normalen Betrieb werden Ausfälle bis zu `history_days` Tagen nachgeholt. Längere Lücken bleiben über **Fehlende Energietage** sichtbar. Alte Tage werden nach mindestens 32 Tagen aus dem lokalen Detailbestand in einen Gesamtstand überführt; bereits importierte HA-Langzeitstatistiken bleiben bestehen.
+
+Ab 0.3.1 ist `poll_interval: 900` der Standard. Damit startet ein regulärer Abruf zu jeder Viertelstunde eine Sekunde nach dem Minutenwechsel, auch um **00:00:01** in der Anlagenzeitzone. Tageswerte werden erst nach erfolgreichem Auslesen veröffentlicht. Dieser Termin garantiert deshalb keinen bereits um 00:00:01 verfügbaren Messwert und erzeugt keinen künstlichen Nullstand. Beim Update einen gespeicherten Wert von `1800` selbst auf `900` ändern und das Add-on neu starten, wenn der Viertelstundentakt gewünscht ist.
 
 Bei der ersten Umstellung kann die Anzeige für den Installationstag größer werden: Der Import enthält den bekannten vollständigen Tagesstand. Die bisherige MQTT-Statistik begann hingegen mit dem ersten Zählerstand als Ausgangspunkt.
 

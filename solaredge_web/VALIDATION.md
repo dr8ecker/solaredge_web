@@ -39,3 +39,12 @@ Parser: Einheiten, Komma/Punkt, Gruppierung, Rundungsauflösung, unparsebare/neg
 - Ein erneuter realer SolarEdge-Abruf mit gespeicherter Session, neuen Tageswerten, MQTT und anschließendem Statistikimport in die getrennte HA-Testinstanz war erfolgreich.
 
 Der Live-Importtest verwendet einen privaten HA-Testzugang direkt zum Test-Core. Die automatische Authentifizierung über den echten Supervisor-Proxy muss nach dem Update auf dem Nutzergerät bestätigt werden. Die Route und Berechtigung entsprechen der offiziellen HA-Dokumentation. Die Stundenverteilung nicht beobachteter Zeiträume bleibt unbekannt; der Import ordnet diese Mengen ausschließlich dem korrekten Tag zu.
+
+## Ergänzungen in 0.3.1
+
+- Standardintervall 900 Sekunden; 11 zusätzliche Tests für feste Viertelstunden, 00:00:01, exakte Grenzen, lange Abrufe ohne Zeitverschiebung oder Warteschlange, angepasste Intervalle, Sommer-/Winterzeit sowie Uhrkorrekturen und sofortigen Abbruch.
+- 72 Prüfungen einschließlich echtem Chromium und isoliertem Mosquitto im gebauten 0.3.1-Image bestanden. Der zusätzliche Test gegen echtes Home Assistant ist weiterhin Teil des CI-Laufs.
+- Transparente Übersicht und Detailkarte im Browser geprüft: Hintergrund, Schatten und Glasfilter entfernt; runde Konturen an Messwertkacheln, transparente Symbole und Chips, Diagramm ohne Flächenfüllung. Helles/dunkles Theme, schmale Ansicht und ein Glas-Theme mit ausdrücklich priorisierten Hintergrundregeln geprüft; keine Browserfehler.
+- Die Detailkarte verwendet ebenfalls `mod-card`, damit die Formatierung schon beim ersten direkten Öffnen zuverlässig angewendet wird. Der Kartenhintergrund wurde als vollständig transparent und die Rundung als 24 px bestätigt.
+
+Der Viertelstundentakt bezeichnet die regulären Starts nach einem erfolgreichen Abruf. Beim Start erfolgt sofort ein Abruf; Fehler, Schutzpausen, lange laufende Abrufe oder größere Uhrkorrekturen können einzelne Termine auslassen. Tageswerte erscheinen nach erfolgreichem Auslesen der Webseite und werden auch kurz nach Mitternacht nicht durch erfundene Nullwerte ersetzt. Vorhandene Optionen werden nicht überschrieben; für vier reguläre Abrufe pro Stunde muss `poll_interval` auf `900` stehen.

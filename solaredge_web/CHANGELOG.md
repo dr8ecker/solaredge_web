@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.1
+
+- Standardintervall 15 Minuten (`poll_interval: 900`). Reguläre Abrufe starten zu festen Viertelstunden bei :00:01, :15:01, :30:01 und :45:01, einschließlich 00:00:01 in der Anlagenzeitzone.
+- Sofortiger Abruf beim Start sowie begrenzte Wiederholungen und Schutzpausen bei Fehlern bleiben erhalten. Tageswerte nach Mitternacht erscheinen erst nach erfolgreichem Auslesen; keine künstlichen Nullwerte.
+- Gespeicherte Add-on-Optionen bleiben beim Update erhalten. Für den neuen Standard einen bestehenden Wert von `poll_interval: 1800` auf `900` ändern und neu starten. Die Warnschwelle für alte Daten beträgt dann 45 Minuten.
+- Transparente Übersicht und Detailkarte mit runden Messwertkacheln und dezenten Konturen; Kartenhintergründe, Schatten, Glasfilter und Diagrammfüllung entfernt. Für das Design den Inhalt beider manuellen Karten durch die aktuelle YAML ersetzen.
+
 ## 0.3.0
 
 - Tageswerte für Hausverbrauch, Netzbezug, Einspeisung und PV-Eigenverbrauch sowie Autarkie und Eigenverbrauchsquote; keine zusätzlichen SolarEdge-Abfragen dafür.

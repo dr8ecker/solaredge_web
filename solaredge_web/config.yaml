@@ -1,5 +1,5 @@
 name: SolarEdge Web Scraper
-version: 0.3.0
+version: 0.3.1
 slug: solaredge_web
 description: SolarEdge-Weboberfläche mit persistenten Energiezählern und MQTT für
   Home Assistant
@@ -18,7 +18,7 @@ options:
   solar_edge_username: ''
   solar_edge_password: ''
   plant_name: Spaeth
-  poll_interval: 1800
+  poll_interval: 900
   headless: true
   debug: false
   mode: normal

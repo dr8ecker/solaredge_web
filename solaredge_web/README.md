@@ -1,4 +1,4 @@
-# SolarEdge Web Scraper 0.3.0
+# SolarEdge Web Scraper 0.3.1
 
 Das Add-on liest mit Playwright Chromium sichtbare SolarEdge-DOM-Werte und reguläre Energie-Tooltips. Scraper und MQTT sind getrennte Komponenten. Keine SolarEdge API, keine eigenen Requests gegen SolarEdge-Endpunkte, kein Modbus, keine OCR und keine Bildauswertung. Die normale Webseite führt ihre üblichen Browserrequests selbst aus.
 
@@ -14,7 +14,7 @@ Im Add-on-/App-Store das Repository `https://github.com/dr8ecker/solaredge_web` 
 solar_edge_username: "DEIN SOLAREDGE LOGIN"
 solar_edge_password: "DEIN SOLAREDGE PASSWORT"
 plant_name: "Spaeth"
-poll_interval: 1800
+poll_interval: 900
 headless: true
 debug: false
 mode: normal
@@ -38,7 +38,7 @@ history_import: true
 | --- | --- |
 | SolarEdge-Zugangsdaten | Nur aus Konfiguration; niemals geloggt |
 | `plant_name` | Exakter sichtbarer Name; doppelte Namen werden abgelehnt |
-| `poll_interval` | Sekunden, 30–3600; Standard 1800 |
+| `poll_interval` | Sekunden, 30–3600; Standard 900 (feste Viertelstunden) |
 | `mode` | `normal`, `discovery` oder `smoke_test` |
 | `mqtt_host` | Leer: Supervisor-MQTT-Dienst; sonst externer Broker |
 | `mqtt_tls` | TLS mit Zertifikatsprüfung für manuelle Broker |
@@ -58,7 +58,11 @@ Das Add-on lädt die gespeicherte Session oder meldet sich einmal regulär an, w
 
 Die Sensoren erscheinen automatisch. Der erste Gesamtzählerstand enthält den bereits angezeigten aktuellen Tageswert; Home Assistant nutzt ihn als statistischen Ausgangspunkt. Der neue separate Historienimport übernimmt vorhandene Tage einschließlich des bekannten Tagesstands vor dem ersten Abruf. [Einrichtung](HISTORY.md).
 
-Nach jedem Abruf öffnet der Browser `about:blank`, um SolarEdges Hintergrundtimer zu stoppen. Nach 30 Minuten wird die Monitoring-Seite im vorhandenen Kontext erneut geöffnet. Ein erneuter Login erfolgt nur bei ungültiger Session.
+Beim Start erfolgt sofort ein Abruf. Mit `poll_interval: 900` starten die folgenden regulären Abrufe zu jeder Viertelstunde bei **:00:01, :15:01, :30:01 und :45:01** in `site_timezone`, einschließlich **00:00:01**. Der Zeitplan richtet sich nach der Uhrzeit; die Dauer eines Abrufs verschiebt die folgenden Termine nicht. Die Werte erscheinen erst, wenn die Webseite erfolgreich ausgelesen wurde. Wiederholungen und Schutzpausen bei Fehlern haben Vorrang vor dem regulären Zeitplan.
+
+**Update von einer älteren Version:** Home Assistant behält gespeicherte Optionen. Für den Viertelstundentakt `poll_interval` auf **900** setzen, speichern und das Add-on neu starten; ein bisheriger Wert von `1800` wird nicht automatisch ersetzt.
+
+Nach jedem Abruf öffnet der Browser `about:blank`, um SolarEdges Hintergrundtimer zu stoppen. Zum nächsten Termin wird die Monitoring-Seite im vorhandenen Kontext erneut geöffnet. Ein erneuter Login erfolgt nur bei ungültiger Session.
 
 ## Sensoren und Energie-Dashboard
 
@@ -102,9 +106,9 @@ Ab 0.3.0 kommen zwölf Sensoren hinzu; insgesamt werden 30 Sensoren veröffentli
 | `history_import_status` | `ok`, `waiting`, `error`, `disabled` oder `supervisor_required` |
 | `history_last_success` | Zeitpunkt des letzten bestätigten Historienimports |
 
-Die Tageswerte stammen aus derselben bereits ausgelesenen Energieansicht. Ein Nenner von null ergibt keinen gültigen Prozentsatz; dieser Sensor bleibt dann unavailable. Am lokalen Tageswechsel werden die Tagesanzeigen bis zum nächsten Abruf unavailable, sodass der Vortagswert nicht als Heute erscheint. Die Gesamtzähler laufen weiter.
+Die Tageswerte stammen aus derselben bereits ausgelesenen Energieansicht. Ein Nenner von null ergibt keinen gültigen Prozentsatz; dieser Sensor bleibt dann unavailable. Am lokalen Tageswechsel werden die Tagesanzeigen bis zum nächsten erfolgreichen Abruf unavailable, sodass der Vortagswert nicht als Heute erscheint. Im Viertelstundentakt startet dieser Abruf um **00:00:01**; seine Ergebnisse liegen erst nach dem Auslesen vor. Eine Null wird nur übernommen, wenn die Webseite sie tatsächlich liefert. Die Gesamtzähler laufen weiter.
 
-Der Datenzustand wird auch zwischen Abrufen geprüft. Die Altersschwelle ist mindestens 15 Minuten oder drei Abrufintervalle; beim Standard also 90 Minuten. Ein einzelner Fehler führt zunächst zu `retrying`, bestätigte Anmeldungshindernisse werden direkt kenntlich gemacht. [Optionale Handy-Benachrichtigung](../blueprints/README.md).
+Der Datenzustand wird auch zwischen Abrufen geprüft. Die Altersschwelle ist mindestens 15 Minuten oder drei Abrufintervalle; beim Standard von 15 Minuten also **45 Minuten**. Bei einem weiterhin gespeicherten 30-Minuten-Intervall sind es 90 Minuten. Ein einzelner Fehler führt zunächst zu `retrying`, bestätigte Anmeldungshindernisse werden direkt kenntlich gemacht. [Optionale Handy-Benachrichtigung](../blueprints/README.md).
 
 `history_import: true` verwendet den internen HA-Zugang des Supervisors, ohne weiteren Benutzer-Token. Dafür enthält die Add-on-Beschreibung `homeassistant_api: true`. Dieser Zugriff betrifft Home Assistant, nicht SolarEdge. Beim separaten Docker-Betrieb ohne Supervisor `history_import: false` setzen. Details zu Tageszuordnung, Migration, Stundenauflösung und Sicherungen: [HISTORY.md](HISTORY.md).
 
