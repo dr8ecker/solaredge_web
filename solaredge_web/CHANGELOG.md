@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.6
+
+- Nach „Anmelden“ wird eine direkte Rückkehr zur Anlagenübersicht oder zum Dashboard mit bestehender Sitzung erkannt. Das Add-on wartet dann nicht mehr vergeblich auf ein Loginformular.
+- Verzögert erscheinende Sitzungen und sichtbare Sicherheitsabfragen werden bereits während des Login-Seitenwechsels erkannt. Versteckte Elemente oder Anlagen-Texte auf fremden Hosts bestätigen keine Anmeldung.
+- Bei einem Login-Timeout zeigen zusätzliche Diagnoseangaben die Seitenkategorie und sichtbare Formular-/Sitzungsmerkmale, ohne URLs, Seitentexte, Eingabewerte oder Zugangsdaten zu protokollieren.
+
 ## 0.3.5
 
 - Standard für Browseraktionen auf 60 Sekunden erhöht (`page_timeout: 60000`), um langsames Laden der Monitoring- und Loginoberfläche testen zu können.

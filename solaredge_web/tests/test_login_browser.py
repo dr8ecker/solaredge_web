@@ -6,6 +6,7 @@ import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
+from urllib.parse import urlsplit
 
 from playwright.async_api import Error, TimeoutError
 
@@ -58,6 +59,128 @@ class LoginBrowserTests(unittest.IsolatedAsyncioTestCase):
         self.browser=BrowserManager(self.config)
         await self.browser.start()
         return SolarEdgeLogin(self.config)
+    async def start_routed(self, pages, *, redirects=None):
+        """Exercise the default entry flow with synthetic HTTPS origins only."""
+        self.config=Config(data_dir=Path(self.directory.name),
+                           solar_edge_username='fixture@example.test',
+                           solar_edge_password='fixture-pass',page_timeout=2000)
+        self.browser=BrowserManager(self.config)
+        await self.browser.start()
+        self.submissions=0
+        redirects=redirects or {}
+        async def serve(route):
+            request=route.request
+            if request.method == 'POST':
+                self.submissions+=1
+            target=urlsplit(request.url)
+            key=f'{target.scheme}://{target.netloc}{target.path}'
+            if key in redirects:
+                # Client redirects are separately intercepted too; fulfilled
+                # HTTP redirects can cause Chromium to follow outside routing.
+                await route.fulfill(content_type='text/html; charset=utf-8',
+                                    body='<script>location.replace('+json.dumps(redirects[key])+')</script>')
+            else:
+                await route.fulfill(status=200 if key in pages else 404,
+                                    content_type='text/html; charset=utf-8',
+                                    body='<html><body>'+pages.get(key,'Unknown fixture')+'</body></html>')
+        # All requests, including accidental unknown targets, stay in the fixture.
+        await self.browser.context.route('**/*',serve)
+        return SolarEdgeLogin(self.config)
+    @staticmethod
+    def entry_page(extra=''):
+        return ('<p>Welcome to Monitoring</p>'+extra+
+                '<button onclick="location.href=\'https://login.solaredge.com/\'">Sign in</button>')
+    @staticmethod
+    def login_form():
+        return '''<h1>SolarEdge</h1>
+            <form method="post" action="https://monitoring.solaredge.com/authenticated">
+            <label>Email address<input type="email" name="email"></label>
+            <label>Password<input type="password" name="password"></label>
+            <button>Sign in</button></form>'''
+    async def test_default_login_entry_submits_form_once(self):
+        login=await self.start_routed({
+            'https://monitoring.solaredge.com/':self.entry_page(),
+            'https://login.solaredge.com/':self.login_form(),
+            'https://monitoring.solaredge.com/authenticated':'<h1>Anlagen</h1>',
+        })
+        await login.ensure(self.browser)
+        self.assertEqual(self.config.login_url,'')
+        self.assertEqual(self.submissions,1)
+        self.assertEqual(login.next_login,0)
+        self.assertTrue(self.config.storage_state_path.exists())
+    async def test_default_entry_accepts_sso_redirect_without_login_form(self):
+        login=await self.start_routed({
+            'https://monitoring.solaredge.com/':self.entry_page(),
+            'https://monitoring.solaredge.com/authenticated':'<h1>Anlagen</h1>',
+        },redirects={
+            'https://login.solaredge.com/':'https://monitoring.solaredge.com/authenticated',
+        })
+        await login.ensure(self.browser)
+        self.assertEqual(self.submissions,0)
+        self.assertEqual(login.next_login,0)
+        self.assertTrue(await self.browser.page.get_by_text('Anlagen',exact=True).is_visible())
+        self.assertTrue(self.config.storage_state_path.exists())
+    async def test_session_can_finish_routing_after_initial_welcome(self):
+        login=await self.start_routed({
+            'https://monitoring.solaredge.com/':'''<p>Welcome to Monitoring</p>
+                <script>setTimeout(() => {document.body.innerHTML='<h1>Anlagen</h1>';},150);</script>''',
+        })
+        await login.ensure(self.browser)
+        self.assertEqual(self.submissions,0)
+        self.assertEqual(login.next_login,0)
+        self.assertTrue(await self.browser.page.get_by_text('Anlagen',exact=True).is_visible())
+    async def test_challenge_at_login_destination_pauses_before_form_wait(self):
+        login=await self.start_routed({
+            'https://monitoring.solaredge.com/':self.entry_page(),
+            'https://login.solaredge.com/':'<h1>Security check</h1><p>Enter verification code</p>',
+        })
+        with self.assertRaises(ManualLoginRequired):
+            await login.ensure(self.browser)
+        self.assertEqual(self.submissions,0)
+        self.assertEqual(login.next_login,0)
+        self.assertFalse(self.config.storage_state_path.exists())
+    async def test_hidden_session_indicators_do_not_skip_login(self):
+        login=await self.start_routed({
+            'https://monitoring.solaredge.com/':self.entry_page(
+                '<h1 hidden>Anlagen</h1><div id="se-date-range-picker" hidden></div>'),
+            'https://login.solaredge.com/':self.login_form(),
+            'https://monitoring.solaredge.com/authenticated':'<h1>Anlagen</h1>',
+        })
+        await login.ensure(self.browser)
+        self.assertEqual(self.submissions,1)
+        self.assertTrue(await self.browser.page.get_by_text('Anlagen',exact=True).is_visible())
+    async def test_session_text_on_untrusted_host_is_not_accepted(self):
+        login=await self.start_routed({
+            'https://untrusted.example.test/':'<h1>Anlagen</h1>'+self.login_form(),
+        })
+        async def load_untrusted_destination():
+            await self.browser.page.goto('https://untrusted.example.test/')
+        with patch.object(self.browser,'load_monitoring',side_effect=load_untrusted_destination):
+            with self.assertRaises(AuthenticationError):
+                await login.ensure(self.browser)
+        self.assertEqual(self.submissions,0)
+        self.assertEqual(login.next_login,0)
+        self.assertEqual(await self.browser.page.get_by_label('Email address',exact=True).input_value(),'')
+        self.assertFalse(self.config.storage_state_path.exists())
+    async def test_login_timeout_diagnostics_include_only_fixed_flags_and_counts(self):
+        login=await self.start_routed({
+            'https://login.solaredge.com/private-redirect':'''<p>PRIVATE_BODY user@example.test</p>
+                <input type="text" value="PRIVATE_USERNAME">
+                <input type="password" value="PRIVATE_PASSWORD">
+                <script>document.cookie='PRIVATE_COOKIE=PRIVATE_COOKIE_VALUE';
+                localStorage.setItem('PRIVATE_STORAGE','PRIVATE_STORAGE_VALUE');</script>''',
+        })
+        await self.browser.page.goto('https://login.solaredge.com/private-redirect?token=PRIVATE_QUERY')
+        with self.assertLogs('app.login',level='WARNING') as captured:
+            with self.assertRaises(TimeoutError):
+                await login.wait_for_login_destination(self.browser.page)
+        output='\n'.join(captured.output)
+        self.assertIn("'host_kind': 'solaredge_login'",output)
+        self.assertIn("'password_field_visible': True",output)
+        self.assertIn("'visible_input_count': 2",output)
+        self.assertIn("'email_field_visible': False",output)
+        for private in ('PRIVATE_','user@example.test','private-redirect','https://','login.solaredge.com'):
+            self.assertNotIn(private,output)
     async def test_normal_login_persists_and_reuses_session(self):
         login=await self.start()
         await login.ensure(self.browser)

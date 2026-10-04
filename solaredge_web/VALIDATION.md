@@ -69,6 +69,13 @@ Die Gegenrichtung wird nur bei genau einem eindeutig beschrifteten, gültigen po
 - Versionsangaben, Manifest, Python-Standard und beide Konfigurationsbeispiele geprüft: Version 0.3.5 und Standard-Timeout 60000 Millisekunden. Ein explizit gespeicherter Timeout von 30000 Millisekunden bleibt erhalten.
 - Die bereitgestellten Logs aus 0.3.4 bestätigen Wiederholungen nach `login_form_wait`-Timeouts ohne vorzeitige Login-Schutzpause. Ob 60 Sekunden Wartezeit das Laden des echten Loginformulars ermöglichen, muss auf dem Home-Assistant-Gerät getestet werden.
 
+## Ergänzungen in 0.3.6
+
+- Am 04.10.2026 sieben neue Browser-Regressionstests ergänzt: normaler Login über den Standard-Einstieg, direkte SSO-Rückkehr ohne Formular, verzögertes Session-Rendering, Sicherheitsabfrage am Loginziel, versteckte Sitzungsindikatoren, Sitzungsmerkmale auf fremdem Host und ausschließlich feste Diagnosewerte ohne private Inhalte.
+- Fünf dieser Ablauffehler wurden zunächst gegen den unveränderten 0.3.5-Code reproduziert. Mit der Korrektur bestehen alle 16 Loginbrowser-Tests. Im AMD64-Container bestehen insgesamt 88 Tests einschließlich echtem Chromium und separatem Mosquitto; der zusätzliche Test gegen eine separate Home-Assistant-Instanz wurde lokal übersprungen und bleibt Teil der CI-Prüfung.
+- Die öffentliche SolarEdge-Seite wurde im Docker-Container mit frischem Browserkontext geprüft: Der Standard-Einstieg erreicht das erwartete englische Loginformular. Der aktuelle Ablauf wurde vor dem Ausfüllen gestoppt; es wurden keine Zugangsdaten übermittelt. Der 0.3.6-Container wurde erfolgreich gebaut.
+- Ob eine direkte Rückleitung mit gespeicherter Sitzung die Timeouts auf dem Nutzergerät verursacht, ist noch nicht bestätigt. Die bereitgestellten Logs aus 0.3.5 belegen nur das weiterhin fehlende erkannte Loginformular nach 60 Sekunden. Zusätzliche Zustandsdiagnosen sollen abweichende Ursachen beim nächsten Gerätetest unterscheiden.
+
 ---
 
 © 2026 [8ecker.de](https://8ecker.de)

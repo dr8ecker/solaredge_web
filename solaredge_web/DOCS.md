@@ -147,6 +147,10 @@ Bei einem HTTP-429-Limit im Monitoring-Aufruf pausiert der normale Modus mindest
 
 Die Login-Schutzpause beginnt erst unmittelbar vor dem Absenden des ausgefüllten Formulars. Netzwerkfehler und Timeouts beim Öffnen oder Ausfüllen des Formulars bleiben im normalen Browser-Backoff; sie lösen keine Login-Schutzpause aus. Nach einem unbestätigten Absendeversuch sind weitere Anmeldeversuche frühestens nach 30 Minuten möglich, auch bei unklarem Ergebnis des Klicks. Unbestätigter Login setzt `login_required`. MFA/CAPTCHA setzt `manual_login_required` und pausiert bis Neustart. Nötige manuelle Anmeldung muss außerhalb des headless Add-ons stattfinden; kein integriertes Web-VNC und keine Umgehung. Eine autorisierte Playwright-Session kann privat in `solaredge_storage_state.json` bereitgestellt werden.
 
+Ab **0.3.6** kann der Login-Einstieg auch mit einer vorhandenen SolarEdge-Sitzung direkt zurück zur Anlagenübersicht oder zum Dashboard führen. Das Add-on erkennt diese Weiterleitung ohne erneutes Absenden von Zugangsdaten. Es wartet außerdem auf die tatsächlich sichtbare Oberfläche, wenn zunächst nur eine Begrüßung erscheint, und erkennt sichtbare Sicherheitsabfragen schon vor dem Loginformular.
+
+Bleibt ein Login-Timeout bestehen, enthält `Login UI state` ausschließlich feste Zustandsmerkmale und Elementanzahlen. `host_kind` unterscheidet `monitoring`, `solaredge_login`, `configured_login` und `other`; `email_field_visible`, `password_field_visible`, `session_confirmed` und `challenge_visible` zeigen den erkannten Seitenzustand. URLs, Seitentexte, Eingabewerte, Cookies und Sitzungstokens werden nicht ausgegeben. Diese Zeile zusammen mit `Dashboard failure details` hilft bei der weiteren Diagnose.
+
 Bei geänderter Webseite zuerst Discovery-Berichte prüfen. Fehlende/unparsebare Felder werden unavailable; bei einem kompletten fehlgeschlagenen Abruf bleiben vorherige Werte innerhalb der Fehler-Toleranz erhalten. Nie Parsingfehler als Null interpretieren.
 
 Healthcheck: Prozess, Heartbeat, Browser, Alter des letzten erfolgreichen Abrufs und MQTT. Kurze Start-Schonfrist. `health.json` und `last_scrape.json` enthalten keine Zugangsdaten.

@@ -6,9 +6,43 @@ import logging
 import re
 from urllib.parse import urlsplit
 
+from playwright.async_api import TimeoutError as BrowserTimeoutError
+
 from .files import write_private_json
 
 LOGGER = logging.getLogger(__name__)
+
+# Only fixed flags/counts leave the page. Never return text, field values,
+# URLs, cookies or storage contents in login diagnostics.
+LOGIN_UI_STATE = r"""monitoringHost => {
+    const visible = el => {
+        if (!el || getComputedStyle(el).visibility === 'hidden') return false;
+        const rect = el.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+    };
+    const inputs = Array.from(document.querySelectorAll('input')).filter(visible);
+    const email = inputs.some(el => el.getAttribute('aria-label') === 'Email address' ||
+        Array.from(el.labels || []).some(label => label.innerText.trim() === 'Email address'));
+    const password = inputs.some(el => el.type === 'password');
+    const plants = Array.from(document.querySelectorAll('body *')).some(el =>
+        /^(Anlagen|Sites)$/.test((el.textContent || '').trim()) && visible(el) &&
+        /^(Anlagen|Sites)$/.test((el.innerText || '').trim()));
+    const dashboard = visible(document.querySelector('#se-date-range-picker'));
+    const challenge = /verify you are human|security check|Sicherheitsüberprüfung|captcha|verification code|Bestätigungscode|multi.factor|two.factor|Einmalpasswort/i.test(document.body?.innerText || '') ||
+        Array.from(document.querySelectorAll('iframe[title]')).some(el =>
+            visible(el) && /challenge|captcha/i.test(el.title));
+    return {
+        email_field_visible: email,
+        password_field_visible: password,
+        session_indicator_visible: plants || dashboard,
+        session_confirmed: location.hostname === monitoringHost && !password && (plants || dashboard),
+        challenge_visible: challenge,
+        login_button_visible: Array.from(document.querySelectorAll('button,[role=button]')).some(el =>
+            visible(el) && /^(Anmelden|Sign in|Log in)$/i.test((el.getAttribute('aria-label') || el.innerText || '').trim())),
+        visible_input_count: inputs.length,
+        visible_form_count: Array.from(document.querySelectorAll('form')).filter(visible).length
+    };
+}"""
 
 
 class ManualLoginRequired(RuntimeError):
@@ -35,15 +69,43 @@ class SolarEdgeLogin:
         self.config = config
         self.next_login = 0.0
 
+    async def ui_state(self, page):
+        return await page.evaluate(LOGIN_UI_STATE, urlsplit(self.config.monitoring_url).hostname)
+
+    async def log_ui_state(self, page):
+        try:
+            state = await asyncio.wait_for(self.ui_state(page), timeout=2)
+            host = urlsplit(page.url).hostname
+            state['host_kind'] = ('monitoring' if host == urlsplit(self.config.monitoring_url).hostname
+                else 'solaredge_login' if host == 'login.solaredge.com'
+                else 'configured_login' if self.config.login_url and host == urlsplit(self.config.login_url).hostname
+                else 'other')
+            LOGGER.warning('Login UI state: %s', state)
+        except Exception:
+            LOGGER.warning('Login UI state unavailable')
+
+    async def wait_for_login_destination(self, page, *, allow_entry=False):
+        try:
+            await page.wait_for_function(
+                '({monitoringHost, allowEntry}) => { const state = (' + LOGIN_UI_STATE + ')(monitoringHost); '
+                'return state.session_confirmed || state.email_field_visible || state.challenge_visible || '
+                '(allowEntry && state.login_button_visible); }',
+                arg={'monitoringHost':urlsplit(self.config.monitoring_url).hostname, 'allowEntry':allow_entry},
+                polling=200)
+        except BrowserTimeoutError:
+            await self.log_ui_state(page)
+            raise
+        await check_challenge(page)
+        return await self.ui_state(page)
+
     async def ensure(self, browser):
         page = browser.page
         await browser.load_monitoring()
         browser.stage = 'session_ui_wait'
-        await check_challenge(page)
         # Wait for the shell to finish routing before deciding to log in.
-        await page.wait_for_function("""() => document.body &&
-          /Anlagen|Sites|Dashboard|Willkommen bei Monitoring|Welcome to Monitoring|Email address|Anmelden|Sign in|Log in/i.test(document.body.innerText)""")
-        if await page.get_by_text(re.compile(r'^(Anlagen|Sites)$')).count() or await page.locator('#se-date-range-picker').count():
+        state = await self.wait_for_login_destination(page, allow_entry=True)
+        if state['session_confirmed']:
+            self.next_login = 0
             LOGGER.info("Stored SolarEdge session accepted")
             return
         if asyncio.get_running_loop().time() < self.next_login:
@@ -53,16 +115,22 @@ class SolarEdgeLogin:
         browser.stage = 'login_navigation'
         if self.config.login_url:
             await page.goto(self.config.login_url, wait_until='domcontentloaded')
-        elif not await page.get_by_label('Email address', exact=True).count():
+        elif not (await self.ui_state(page))['email_field_visible']:
             await page.get_by_role('button', name=re.compile(r'^(Anmelden|Sign in|Log in)$', re.I)).click()
         email = page.get_by_label('Email address', exact=True)
         browser.stage = 'login_form_wait'
+        state = await self.wait_for_login_destination(page)
+        if state['session_confirmed']:
+            self.next_login = 0
+            await self.save(browser)
+            LOGGER.info('SolarEdge session accepted after login redirect; session saved privately')
+            return
         await email.wait_for(state='visible')
-        await check_challenge(page)
         trusted = {"login.solaredge.com"}
         if self.config.login_url:
             trusted.add(urlsplit(self.config.login_url).hostname)
         if urlsplit(page.url).hostname not in trusted:
+            await self.log_ui_state(page)
             raise AuthenticationError("Unexpected login host; credentials not submitted")
         form = page.locator('form').filter(has=email)
         if await form.count() != 1:
@@ -88,11 +156,10 @@ class SolarEdgeLogin:
             await check_challenge(page)
             raise AuthenticationError("Login did not reach the monitoring UI") from None
         await check_challenge(page)
-        if urlsplit(page.url).hostname != urlsplit(self.config.monitoring_url).hostname or await page.locator('input[type=password]').count():
+        state = await self.ui_state(page)
+        if urlsplit(page.url).hostname != urlsplit(self.config.monitoring_url).hostname or state['password_field_visible']:
             raise AuthenticationError("Login failed; check configured credentials")
-        authenticated = page.get_by_text(re.compile(r'^(Anlagen|Sites)$'))
-        has_plants = any([await target.is_visible() for target in await authenticated.all()])
-        if not has_plants and not await page.locator('#se-date-range-picker').count():
+        if not state['session_confirmed']:
             raise AuthenticationError('Login did not produce a confirmed monitoring session')
         self.next_login = 0
         await self.save(browser)
