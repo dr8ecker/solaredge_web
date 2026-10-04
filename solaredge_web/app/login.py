@@ -1,5 +1,5 @@
 # Copyright (c) 2026 8ecker.de
-"""Regular, bounded login using verified labels and persistent storage state."""
+"""Regular, bounded login using a unique password form and persistent state."""
 
 import asyncio
 import logging
@@ -12,18 +12,38 @@ from .files import write_private_json
 
 LOGGER = logging.getLogger(__name__)
 
+# Field semantics are shared between the readiness check and the fill step.
+# SolarEdge also renders a corporate SSO form; never select a username globally.
+USERNAME_INPUT = r"""el => {
+    if (!['text', 'email'].includes(el.type)) return false;
+    if (el.type === 'email' || el.name.toLowerCase() === 'username' ||
+        el.autocomplete.toLowerCase().split(/\s+/).includes('username')) return true;
+    const labels = Array.from(el.labels || []).map(label => label.innerText.trim());
+    labels.push(el.getAttribute('aria-label') || '');
+    labels.push((el.getAttribute('aria-labelledby') || '').split(/\s+/)
+        .map(id => document.getElementById(id)?.innerText || '').join(' ').trim());
+    return labels.some(label => /^(Email(?: address)?|E[-\s]?Mail(?:[-\s]?Adresse)?|Benutzername|Username)$/i.test(label));
+}"""
+SUBMIT_SELECTOR = 'button[type="submit" i], button:not([type]), input[type="submit" i]'
+
 # Only fixed flags/counts leave the page. Never return text, field values,
 # URLs, cookies or storage contents in login diagnostics.
 LOGIN_UI_STATE = r"""monitoringHost => {
+    const isUsername = USERNAME_FUNCTION;
     const visible = el => {
         if (!el || getComputedStyle(el).visibility === 'hidden') return false;
         const rect = el.getBoundingClientRect();
         return rect.width > 0 && rect.height > 0;
     };
     const inputs = Array.from(document.querySelectorAll('input')).filter(visible);
-    const email = inputs.some(el => el.getAttribute('aria-label') === 'Email address' ||
-        Array.from(el.labels || []).some(label => label.innerText.trim() === 'Email address'));
+    const email = inputs.some(isUsername);
     const password = inputs.some(el => el.type === 'password');
+    const forms = Array.from(document.querySelectorAll('form'));
+    const passwordForms = forms.filter(form =>
+        Array.from(form.querySelectorAll('input[type="password"]')).some(visible));
+    const usernames = form => Array.from(form.querySelectorAll('input')).filter(visible).filter(isUsername);
+    const formReady = passwordForms.some(form => usernames(form).length &&
+        Array.from(form.querySelectorAll('SUBMIT_BUTTONS')).some(visible));
     const plants = Array.from(document.querySelectorAll('body *')).some(el =>
         /^(Anlagen|Sites)$/.test((el.textContent || '').trim()) && visible(el) &&
         /^(Anlagen|Sites)$/.test((el.innerText || '').trim()));
@@ -34,15 +54,18 @@ LOGIN_UI_STATE = r"""monitoringHost => {
     return {
         email_field_visible: email,
         password_field_visible: password,
+        password_form_count: passwordForms.length,
+        username_candidate_count: passwordForms.reduce((count, form) => count + usernames(form).length, 0),
+        login_form_ready: formReady,
         session_indicator_visible: plants || dashboard,
         session_confirmed: location.hostname === monitoringHost && !password && (plants || dashboard),
         challenge_visible: challenge,
         login_button_visible: Array.from(document.querySelectorAll('button,[role=button]')).some(el =>
             visible(el) && /^(Anmelden|Sign in|Log in)$/i.test((el.getAttribute('aria-label') || el.innerText || '').trim())),
         visible_input_count: inputs.length,
-        visible_form_count: Array.from(document.querySelectorAll('form')).filter(visible).length
+        visible_form_count: forms.filter(visible).length
     };
-}"""
+}""".replace('USERNAME_FUNCTION', USERNAME_INPUT).replace('SUBMIT_BUTTONS', SUBMIT_SELECTOR)
 
 
 class ManualLoginRequired(RuntimeError):
@@ -88,7 +111,7 @@ class SolarEdgeLogin:
         try:
             await page.wait_for_function(
                 '({monitoringHost, allowEntry}) => { const state = (' + LOGIN_UI_STATE + ')(monitoringHost); '
-                'return state.session_confirmed || state.email_field_visible || state.challenge_visible || '
+                'return state.session_confirmed || state.login_form_ready || state.challenge_visible || '
                 '(allowEntry && state.login_button_visible); }',
                 arg={'monitoringHost':urlsplit(self.config.monitoring_url).hostname, 'allowEntry':allow_entry},
                 polling=200)
@@ -97,6 +120,31 @@ class SolarEdgeLogin:
             raise
         await check_challenge(page)
         return await self.ui_state(page)
+
+    async def login_fields(self, page):
+        trusted = {'login.solaredge.com'}
+        if self.config.login_url:
+            trusted.add(urlsplit(self.config.login_url).hostname)
+        if urlsplit(page.url).hostname not in trusted:
+            await self.log_ui_state(page)
+            raise AuthenticationError('Unexpected login host; credentials not submitted')
+        form = page.locator('form').filter(has=page.locator('input[type="password"]:visible'))
+        if await form.count() != 1:
+            await self.log_ui_state(page)
+            raise AuthenticationError('Login password form is ambiguous; credentials not submitted')
+        password = form.locator('input[type="password"]:visible')
+        usernames = []
+        for field in await form.locator('input:visible').all():
+            if await field.evaluate(USERNAME_INPUT):
+                usernames.append(field)
+        if await password.count() != 1 or len(usernames) != 1:
+            await self.log_ui_state(page)
+            raise AuthenticationError('Login fields are ambiguous; credentials not submitted')
+        submit = form.locator(SUBMIT_SELECTOR).filter(visible=True)
+        if await submit.count() != 1:
+            await self.log_ui_state(page)
+            raise AuthenticationError('Login action is ambiguous; credentials not submitted')
+        return usernames[0], password, submit
 
     async def ensure(self, browser):
         page = browser.page
@@ -115,9 +163,8 @@ class SolarEdgeLogin:
         browser.stage = 'login_navigation'
         if self.config.login_url:
             await page.goto(self.config.login_url, wait_until='domcontentloaded')
-        elif not (await self.ui_state(page))['email_field_visible']:
+        elif not (await self.ui_state(page))['password_field_visible']:
             await page.get_by_role('button', name=re.compile(r'^(Anmelden|Sign in|Log in)$', re.I)).click()
-        email = page.get_by_label('Email address', exact=True)
         browser.stage = 'login_form_wait'
         state = await self.wait_for_login_destination(page)
         if state['session_confirmed']:
@@ -125,23 +172,11 @@ class SolarEdgeLogin:
             await self.save(browser)
             LOGGER.info('SolarEdge session accepted after login redirect; session saved privately')
             return
-        await email.wait_for(state='visible')
-        trusted = {"login.solaredge.com"}
-        if self.config.login_url:
-            trusted.add(urlsplit(self.config.login_url).hostname)
-        if urlsplit(page.url).hostname not in trusted:
-            await self.log_ui_state(page)
-            raise AuthenticationError("Unexpected login host; credentials not submitted")
-        form = page.locator('form').filter(has=email)
-        if await form.count() != 1:
-            raise AuthenticationError("Login form is ambiguous; run discovery")
-        submit = form.get_by_role('button', name='Sign in', exact=True)
-        if await submit.count() != 1:
-            raise AuthenticationError("Login action is ambiguous")
+        email, password, submit = await self.login_fields(page)
         LOGGER.info("Signing in with regular SolarEdge login form")
         browser.stage = 'login_form_fill'
         await email.fill(self.config.solar_edge_username)
-        await form.get_by_label('Password', exact=True).fill(self.config.solar_edge_password)
+        await password.fill(self.config.solar_edge_password)
         # Navigation, form waits and fills do not submit credentials. Arm the
         # cooldown only at submission, before click: a failed click may already
         # have sent the form, so its result must still be treated conservatively.

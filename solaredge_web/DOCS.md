@@ -149,7 +149,11 @@ Die Login-Schutzpause beginnt erst unmittelbar vor dem Absenden des ausgefüllte
 
 Ab **0.3.6** kann der Login-Einstieg auch mit einer vorhandenen SolarEdge-Sitzung direkt zurück zur Anlagenübersicht oder zum Dashboard führen. Das Add-on erkennt diese Weiterleitung ohne erneutes Absenden von Zugangsdaten. Es wartet außerdem auf die tatsächlich sichtbare Oberfläche, wenn zunächst nur eine Begrüßung erscheint, und erkennt sichtbare Sicherheitsabfragen schon vor dem Loginformular.
 
+Ab **0.3.7** wird das normale Loginformular über sein sichtbares Passwortfeld erkannt. Benutzerfeld und Absendeaktion müssen innerhalb dieses Formulars eindeutig sein. Das Benutzerfeld kann durch E-Mail-Feldtyp, Benutzername-Merkmale oder deutsche/englische Beschriftungen erkannt werden; das exakte Label „Email address“ ist nicht erforderlich. Das separate Firmen-/SSO-Formular wird dafür nicht verwendet. Bei Mehrdeutigkeit werden keine Zugangsdaten eingetragen.
+
 Bleibt ein Login-Timeout bestehen, enthält `Login UI state` ausschließlich feste Zustandsmerkmale und Elementanzahlen. `host_kind` unterscheidet `monitoring`, `solaredge_login`, `configured_login` und `other`; `email_field_visible`, `password_field_visible`, `session_confirmed` und `challenge_visible` zeigen den erkannten Seitenzustand. URLs, Seitentexte, Eingabewerte, Cookies und Sitzungstokens werden nicht ausgegeben. Diese Zeile zusammen mit `Dashboard failure details` hilft bei der weiteren Diagnose.
+
+`password_form_count` zählt Formulare mit sichtbarem Passwortfeld, `username_candidate_count` die darin erkannten Benutzerfelder und `login_form_ready` zeigt an, ob ein Passwortformular ein erkanntes Benutzerfeld und eine sichtbare Absendeaktion enthält. Vor dem Ausfüllen wird zusätzlich die Eindeutigkeit geprüft.
 
 Bei geänderter Webseite zuerst Discovery-Berichte prüfen. Fehlende/unparsebare Felder werden unavailable; bei einem kompletten fehlgeschlagenen Abruf bleiben vorherige Werte innerhalb der Fehler-Toleranz erhalten. Nie Parsingfehler als Null interpretieren.
 

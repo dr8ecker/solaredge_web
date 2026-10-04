@@ -76,6 +76,13 @@ Die Gegenrichtung wird nur bei genau einem eindeutig beschrifteten, gültigen po
 - Die öffentliche SolarEdge-Seite wurde im Docker-Container mit frischem Browserkontext geprüft: Der Standard-Einstieg erreicht das erwartete englische Loginformular. Der aktuelle Ablauf wurde vor dem Ausfüllen gestoppt; es wurden keine Zugangsdaten übermittelt. Der 0.3.6-Container wurde erfolgreich gebaut.
 - Ob eine direkte Rückleitung mit gespeicherter Sitzung die Timeouts auf dem Nutzergerät verursacht, ist noch nicht bestätigt. Die bereitgestellten Logs aus 0.3.5 belegen nur das weiterhin fehlende erkannte Loginformular nach 60 Sekunden. Zusätzliche Zustandsdiagnosen sollen abweichende Ursachen beim nächsten Gerätetest unterscheiden.
 
+## Ergänzungen in 0.3.7
+
+- Die Nutzerlogs aus 0.3.6 zeigen ein sichtbares Passwortfeld und zwei Formulare auf `solaredge_login`, während das exakte E-Mail-Label nicht erkannt wird. Das grenzt den aktuellen Fehler auf die Formularerkennung ein; eine erfolgreiche SSO-Rückkehr ist in diesem Versuch nicht zu sehen.
+- Fünf neue Regressionstests für deutsche Labels, ein ungelabeltes E-Mail-Feld neben dem Firmen-/SSO-Formular, `autocomplete="username"` und mehrdeutige Felder/Formulare schlagen mit dem unveränderten 0.3.6-Code fehl. Mit der Korrektur bestehen alle 21 Loginbrowser-Tests. Mehrdeutige Fälle werden vor jeder Eingabe und Übermittlung abgewiesen.
+- Am 04.10.2026 bestehen im gebauten 0.3.7-AMD64-Container 93 Tests einschließlich echtem Chromium und isoliertem Mosquitto. Ein zusätzlicher Test gegen eine separate Home-Assistant-Instanz wurde lokal übersprungen und bleibt Teil der CI-Prüfung.
+- Die öffentliche SolarEdge-Seite wurde im Docker erneut geprüft: Im normalen Passwortformular sind `type=email`, `name=username`, `type=password` und eine Submit-Aktion vorhanden; das zweite Formular enthält das Firmen-E-Mail-Feld. Der neue Ablauf erkennt eindeutig das normale Formular und wurde vor dem Ausfüllen gestoppt. Es wurden keine echten Zugangsdaten übermittelt. Die Bestätigung auf dem Nutzergerät steht noch aus.
+
 ---
 
 © 2026 [8ecker.de](https://8ecker.de)

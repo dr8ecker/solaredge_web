@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.7
+
+- Loginfelder werden innerhalb des eindeutigen sichtbaren Passwortformulars anhand von Feldtyp, Benutzername-Merkmalen oder deutschen/englischen Beschriftungen erkannt. Das exakte englische Label „Email address“ ist nicht mehr erforderlich.
+- Das separate Firmen-/SSO-Formular wird nicht mit dem normalen Passwort-Login verwechselt. Bei mehrdeutigen Feldern, Formularen oder Absendeaktionen werden keine Zugangsdaten eingetragen.
+- Login-Diagnose um Anzahl der Passwortformulare, passende Benutzerfelder und Formularbereitschaft erweitert.
+
 ## 0.3.6
 
 - Nach „Anmelden“ wird eine direkte Rückkehr zur Anlagenübersicht oder zum Dashboard mit bestehender Sitzung erkannt. Das Add-on wartet dann nicht mehr vergeblich auf ein Loginformular.

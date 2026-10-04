@@ -6,7 +6,7 @@ import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 from playwright.async_api import Error, TimeoutError
 
@@ -67,11 +67,13 @@ class LoginBrowserTests(unittest.IsolatedAsyncioTestCase):
         self.browser=BrowserManager(self.config)
         await self.browser.start()
         self.submissions=0
+        self.posted_forms=[]
         redirects=redirects or {}
         async def serve(route):
             request=route.request
             if request.method == 'POST':
                 self.submissions+=1
+                self.posted_forms.append(parse_qs(request.post_data or ''))
             target=urlsplit(request.url)
             key=f'{target.scheme}://{target.netloc}{target.path}'
             if key in redirects:
@@ -108,6 +110,88 @@ class LoginBrowserTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.submissions,1)
         self.assertEqual(login.next_login,0)
         self.assertTrue(self.config.storage_state_path.exists())
+    async def test_localized_german_login_labels_and_submit_are_supported(self):
+        login=await self.start_routed({
+            'https://monitoring.solaredge.com/':self.entry_page(),
+            'https://login.solaredge.com/':'''<h1>SolarEdge</h1>
+                <form method="post" action="https://monitoring.solaredge.com/authenticated">
+                <label>E-Mail-Adresse<input type="text" name="user"></label>
+                <label>Passwort<input type="password" name="password"></label>
+                <button>Anmelden</button></form>''',
+            'https://monitoring.solaredge.com/authenticated':'<h1>Anlagen</h1>',
+        })
+        await login.ensure(self.browser)
+        self.assertEqual(self.submissions,1)
+        self.assertEqual(self.posted_forms,[{'user':['fixture@example.test'],'password':['fixture-pass']}])
+        self.assertEqual(login.next_login,0)
+        self.assertTrue(self.config.storage_state_path.exists())
+    async def test_unlabelled_email_is_selected_from_password_form_not_corporate_sso(self):
+        login=await self.start_routed({
+            'https://monitoring.solaredge.com/':self.entry_page(),
+            'https://login.solaredge.com/':'''<h1>SolarEdge</h1>
+                <form id="corporate" method="post" action="https://login.solaredge.com/corporate">
+                <label>Email address<input type="text" name="corporate-user" autocomplete="username"></label>
+                <button>Sign in</button></form>
+                <form id="regular" method="post" action="https://monitoring.solaredge.com/authenticated">
+                <input type="email" name="username">
+                <input type="password" name="password">
+                <button>Sign in</button></form>''',
+            'https://monitoring.solaredge.com/authenticated':'<h1>Anlagen</h1>',
+        })
+        await login.ensure(self.browser)
+        self.assertEqual(self.submissions,1)
+        self.assertEqual(self.posted_forms,[{'username':['fixture@example.test'],'password':['fixture-pass']}])
+        self.assertEqual(login.next_login,0)
+        self.assertTrue(await self.browser.page.get_by_text('Anlagen',exact=True).is_visible())
+        self.assertTrue(self.config.storage_state_path.exists())
+    async def test_text_username_autocomplete_identifies_unlabelled_login(self):
+        login=await self.start_routed({
+            'https://monitoring.solaredge.com/':self.entry_page(),
+            'https://login.solaredge.com/':'''<h1>SolarEdge</h1>
+                <form method="post" action="https://monitoring.solaredge.com/authenticated">
+                <input type="text" name="user" autocomplete="username">
+                <input type="password" name="password" autocomplete="current-password">
+                <button>Log in</button></form>''',
+            'https://monitoring.solaredge.com/authenticated':'<h1>Anlagen</h1>',
+        })
+        await login.ensure(self.browser)
+        self.assertEqual(self.submissions,1)
+        self.assertEqual(self.posted_forms,[{'user':['fixture@example.test'],'password':['fixture-pass']}])
+        self.assertEqual(login.next_login,0)
+        self.assertTrue(self.config.storage_state_path.exists())
+    async def test_ambiguous_username_fields_reject_before_filling_credentials(self):
+        login=await self.start_routed({
+            'https://monitoring.solaredge.com/':self.entry_page(),
+            'https://login.solaredge.com/':'''<h1>SolarEdge</h1>
+                <form method="post" action="https://monitoring.solaredge.com/authenticated">
+                <input type="email" name="first-user">
+                <input type="text" name="second-user" autocomplete="username">
+                <input type="password" name="password">
+                <button>Sign in</button></form>''',
+        })
+        with self.assertRaises(AuthenticationError):
+            await login.ensure(self.browser)
+        self.assertEqual(self.submissions,0)
+        self.assertEqual(login.next_login,0)
+        self.assertFalse(self.config.storage_state_path.exists())
+        self.assertEqual(await self.browser.page.locator('input').evaluate_all(
+            'inputs => inputs.map(input => input.value)'),['','',''])
+    async def test_multiple_password_forms_reject_before_filling_credentials(self):
+        login=await self.start_routed({
+            'https://monitoring.solaredge.com/':self.entry_page(),
+            'https://login.solaredge.com/':self.login_form()+'''
+                <form method="post" action="https://login.solaredge.com/another-login">
+                <input type="email" name="another-user">
+                <input type="password" name="another-password">
+                <button>Sign in</button></form>''',
+        })
+        with self.assertRaises(AuthenticationError):
+            await login.ensure(self.browser)
+        self.assertEqual(self.submissions,0)
+        self.assertEqual(login.next_login,0)
+        self.assertFalse(self.config.storage_state_path.exists())
+        self.assertEqual(await self.browser.page.locator('input').evaluate_all(
+            'inputs => inputs.map(input => input.value)'),['','','',''])
     async def test_default_entry_accepts_sso_redirect_without_login_form(self):
         login=await self.start_routed({
             'https://monitoring.solaredge.com/':self.entry_page(),
