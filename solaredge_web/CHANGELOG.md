@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.5
+
+- Standard für Browseraktionen auf 60 Sekunden erhöht (`page_timeout: 60000`), um langsames Laden der Monitoring- und Loginoberfläche testen zu können.
+- Bestehende Add-on-Optionen bleiben erhalten. Für den Test einen gespeicherten Wert von `page_timeout: 30000` auf `60000` ändern und neu starten.
+- Die längere Wartezeit ist ein Diagnoseschritt für `login_form_wait`-Timeouts; eine Behebung auf dem Home-Assistant-Gerät ist noch nicht bestätigt.
+
 ## 0.3.4
 
 - Login-Schutzpause beginnt erst vor dem Absenden des ausgefüllten Formulars. Navigations-, Formularlade- und Ausfüllfehler blockieren dadurch keine normalen Wiederholungen ohne Anmeldeversuch.

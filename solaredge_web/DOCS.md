@@ -38,7 +38,7 @@ mqtt_password: ""
 login_url: ""
 monitoring_url: "https://monitoring.solaredge.com/"
 browser_path: ""
-page_timeout: 30000
+page_timeout: 60000
 max_retries: 5
 site_timezone: Europe/Berlin
 history_days: 7
@@ -54,7 +54,7 @@ history_import: true
 | `mqtt_host` | Leer: Supervisor-MQTT-Dienst; sonst externer Broker |
 | `mqtt_tls` | TLS mit Zertifikatsprüfung für manuelle Broker |
 | `mqtt_discovery_prefix` | Muss zur MQTT-Integration passen |
-| `page_timeout` | Pro Browseraktion, Millisekunden, 5000–120000 |
+| `page_timeout` | Pro Browseraktion, Millisekunden, 5000–120000; Standard 60000 |
 | `max_retries` | Fehlversuche bis SolarEdge-Sensoren unavailable werden, 1–10 |
 | `site_timezone` | Anlagenzeitzone; muss zu SolarEdges Heute-Datum passen |
 | `history_import` | Tagesgenaue HA-Statistiken über Supervisor importieren; Standard true |
@@ -72,6 +72,8 @@ Die Sensoren erscheinen automatisch. Der erste Gesamtzählerstand enthält den b
 Beim Start erfolgt sofort ein Abruf. Mit `poll_interval: 900` starten die folgenden regulären Abrufe zu jeder Viertelstunde bei **:00:01, :15:01, :30:01 und :45:01** in `site_timezone`, einschließlich **00:00:01**. Der Zeitplan richtet sich nach der Uhrzeit; die Dauer eines Abrufs verschiebt die folgenden Termine nicht. Die Werte erscheinen erst, wenn die Webseite erfolgreich ausgelesen wurde. Wiederholungen und Schutzpausen bei Fehlern haben Vorrang vor dem regulären Zeitplan.
 
 **Update von einer älteren Version:** Home Assistant behält gespeicherte Optionen. Für den Viertelstundentakt `poll_interval` auf **900** setzen, speichern und das Add-on neu starten; ein bisheriger Wert von `1800` wird nicht automatisch ersetzt.
+
+Ab **0.3.5** beträgt der Standard für `page_timeout` **60000** (60 Sekunden pro Browseraktion). Für den Test bei `login_form_wait`-Timeouts einen gespeicherten Wert von `30000` auf `60000` ändern, speichern und neu starten. Das Update überschreibt bestehende Optionen nicht. Die längere Wartezeit ist ein Diagnoseschritt; sie bestätigt keine Behebung eines nicht erkannten oder nicht geladenen Loginformulars.
 
 Nach jedem Abruf öffnet der Browser `about:blank`, um SolarEdges Hintergrundtimer zu stoppen. Zum nächsten Termin wird die Monitoring-Seite im vorhandenen Kontext erneut geöffnet. Ein erneuter Login erfolgt nur bei ungültiger Session.
 

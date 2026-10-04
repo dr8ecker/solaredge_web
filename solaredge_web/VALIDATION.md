@@ -63,6 +63,12 @@ Die Gegenrichtung wird nur bei genau einem eindeutig beschrifteten, gültigen po
 - Fünf zusätzliche Regressionstests prüfen Monitoring-Timeout, Netzwerkfehler beim Öffnen des Loginformulars, Formularlade-Timeout und Ausfüllfehler ohne Login-Schutzpause sowie einen unklaren Absendeversuch mit beibehaltener Schutzpause. Nach Fehlern vor dem Absenden gelingt der erneute Login; bei unklarem Absenden wird kein zweiter Klick versucht.
 - Die bereitgestellten Betriebslogs zeigen `ERR_NETWORK_CHANGED` und Timeouts in `monitoring_ui_wait`. Deren Ursache und die Korrektur auf dem Home-Assistant-Gerät wurden noch nicht live geprüft. Ein Monitoring-Timeout allein aktiviert auch im bisherigen Code keine Login-Schutzpause; die behobene vorzeitige Aktivierung betrifft die anschließende Login-Vorbereitung.
 
+## Ergänzungen in 0.3.5
+
+- Am 04.10.2026 unter Windows mit Playwright und lokalem Chromium erneut 82 Tests ausgeführt: 80 bestanden, zwei opt-in Prüfungen für einen separaten MQTT-Broker und eine separate Home-Assistant-Instanz übersprungen.
+- Versionsangaben, Manifest, Python-Standard und beide Konfigurationsbeispiele geprüft: Version 0.3.5 und Standard-Timeout 60000 Millisekunden. Ein explizit gespeicherter Timeout von 30000 Millisekunden bleibt erhalten.
+- Die bereitgestellten Logs aus 0.3.4 bestätigen Wiederholungen nach `login_form_wait`-Timeouts ohne vorzeitige Login-Schutzpause. Ob 60 Sekunden Wartezeit das Laden des echten Loginformulars ermöglichen, muss auf dem Home-Assistant-Gerät getestet werden.
+
 ---
 
 © 2026 [8ecker.de](https://8ecker.de)

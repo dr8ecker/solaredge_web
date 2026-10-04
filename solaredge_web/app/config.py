@@ -48,7 +48,7 @@ class Config:
     login_url: str = ""
     monitoring_url: str = "https://monitoring.solaredge.com/"
     browser_path: str = ""
-    page_timeout: int = 30000
+    page_timeout: int = 60000
     max_retries: int = 5
     site_timezone: str = "Europe/Berlin"
     history_days: int = 7
