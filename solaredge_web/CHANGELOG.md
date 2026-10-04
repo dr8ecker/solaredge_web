@@ -1,6 +1,6 @@
 # Changelog
 
-## Unveröffentlicht
+## 0.3.4
 
 - Login-Schutzpause beginnt erst vor dem Absenden des ausgefüllten Formulars. Navigations-, Formularlade- und Ausfüllfehler blockieren dadurch keine normalen Wiederholungen ohne Anmeldeversuch.
 - Unklarer Absendeversuch behält die Schutzpause; bestätigte Fehlanmeldungen werden weiterhin nicht schnell wiederholt.
