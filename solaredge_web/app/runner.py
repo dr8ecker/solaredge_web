@@ -44,6 +44,7 @@ async def run_normal(config, *, once=False):
     publisher = MqttPublisher(config) if config.mode == 'normal' else None
     ledger = None
     failures = 0
+    reported_failures = set()
     importer = StatisticsImporter(config)
 
     async def heartbeat():
@@ -136,6 +137,7 @@ async def run_normal(config, *, once=False):
                     break
                 values = await loading
                 failures = 0
+                reported_failures.clear()
                 success = datetime.now(timezone.utc).isoformat()
                 if publisher:
                     await browser.idle()
@@ -206,7 +208,19 @@ async def run_normal(config, *, once=False):
                            'page_crashed':browser.page_crashed, **runtime_details()}
                 LOGGER.warning('Dashboard failure details: %s', details)
                 if isinstance(error, ValueError):
-                    LOGGER.warning('DOM/date/energy validation failed; use mode=discovery to inspect the current UI')
+                    signature = (details['reason'], details.get('field'))
+                    if browser.stage == 'dashboard_scrape' and browser.usable and signature not in reported_failures:
+                        try:
+                            # Preserve the failed UI before idle discards it. One
+                            # bounded report per reason until the next success.
+                            await asyncio.wait_for(SolarEdgeDiscovery(config).collect(
+                                browser.page, filename='dashboard_failure_report.json', failure=details),
+                                timeout=min(10, config.page_timeout / 1000))
+                            reported_failures.add(signature)
+                            LOGGER.warning('Private dashboard failure report saved: dashboard_failure_report.json')
+                        except Exception as diagnostic_error:
+                            LOGGER.warning('Dashboard failure report unavailable: %s', failure_details(diagnostic_error))
+                    LOGGER.warning('DOM/date/energy validation failed (%s); use mode=discovery for further inspection', details['reason'])
                 health.update(status='error', consecutive_failures=failures, last_failure=details)
                 if publisher:
                     publisher.update({'scraper_status':'error'})

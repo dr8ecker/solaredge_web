@@ -97,7 +97,7 @@ class SolarEdgeDiscovery:
         value = re.sub(r"[A-Za-z0-9_+/=-]{40,}", "[redacted-long-value]", value)
         return value
 
-    async def collect(self, page):
+    async def collect(self, page, *, filename='discovery_report.json', failure=None):
         flat = list(dict.fromkeys(word for words in self.keywords.values() for word in words))
         frames = []
         for frame in page.frames:
@@ -114,5 +114,7 @@ class SolarEdgeDiscovery:
             "selector_notice": "Candidates observed in the real DOM; not finalized production selectors",
             "frames": frames,
         })
-        write_private_json(self.config.data_dir / "discovery_report.json", report)
+        if failure is not None:
+            report['failure'] = self.clean(failure)
+        write_private_json(self.config.data_dir / filename, report)
         return report

@@ -137,6 +137,10 @@ Der Discovery-Vorgang endet nach einem Durchlauf. Anschließend `mode: normal` s
 
 `debug: true` erzeugt zusätzlich bereinigte DOM-Berichte nach erfolgreichen normalen Abrufen. Es gibt keinen öffentlichen Diagnose-Webserver und keinen vollständigen HTML-Dump. Screenshots dienen nur zur Diagnose und werden nicht ausgewertet. Berichte können Anlagen-/Energiedaten enthalten; vor Weitergabe prüfen.
 
+Ab **0.3.8** stehen bei Dashboard-Validierungsfehlern in `Dashboard failure details` zusätzlich `reason` und gegebenenfalls `field`. Beispielsweise bezeichnet `distribution_energy_incomplete` mit `field: consumption_card` eine unvollständig gelesene Verbrauchsaufteilung; `quantity_missing` und `quantity_ambiguous` unterscheiden fehlende von mehreren Mengenangaben.
+
+Sie sichert außerdem automatisch `/data/runtime/dashboard_failure_report.json`, auch bei `debug: false` und im normalen Modus. Der Bericht enthält bereinigte sichtbare DOM-Elemente und die Fehlerkategorie aus dem fehlgeschlagenen Versuch. Die Seite wird dafür weder neu geladen noch umgeschaltet. Ein neuer Fehlergrund oder ein Fehler nach einem erfolgreichen Abruf ersetzt den Bericht; identische wiederholte Fehler überschreiben ihn nicht. Die Erfassung wartet höchstens zehn Sekunden. Ein Fehler beim Speichern unterbricht die normalen Wiederholungen nicht. Der Bericht kann Anlagen-/Energiedaten enthalten; vor Weitergabe prüfen.
+
 `mode: smoke_test` prüft ausschließlich den Browser und die öffentliche Monitoring-Seite. Kein Login, kein Energieabruf, kein MQTT.
 
 ## Fehler und Session

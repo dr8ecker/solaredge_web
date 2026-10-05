@@ -1,4 +1,4 @@
-# SolarEdge Web Scraper 0.3.7
+# SolarEdge Web Scraper 0.3.8
 
 Das Add-on bringt die Werte deiner PV-Anlage aus dem SolarEdge-Monitoring-Portal nach Home Assistant. Damit kannst du Solarerzeugung, Hausverbrauch, Netzbezug und Einspeisung im Energie-Dashboard auswerten und die wichtigsten Werte auf deinem normalen Dashboard anzeigen.
 

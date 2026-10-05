@@ -7,7 +7,32 @@ from decimal import Decimal, InvalidOperation
 
 
 class ParseError(ValueError):
-    pass
+    # Fixed codes are safe to publish; raw DOM/browser text is never a code.
+    REASONS = {
+        'Invalid numeric grouping': 'invalid_numeric_grouping',
+        'Ambiguous numeric separators': 'ambiguous_numeric_separators',
+        'Invalid number': 'invalid_number',
+        'Nonfinite number': 'nonfinite_number',
+        'Expected one unambiguous quantity': 'quantity_missing_or_ambiguous',
+        'Quantity missing': 'quantity_missing',
+        'Multiple quantities found': 'quantity_ambiguous',
+        'Temperature out of range': 'temperature_out_of_range',
+        'Negative quantity': 'negative_quantity',
+        'Percentage out of range': 'percentage_out_of_range',
+        'Grid direction ambiguous or missing a quantity': 'grid_direction_ambiguous',
+        'Distribution labels missing; no zero assumed': 'distribution_labels_missing',
+        'Tooltip is ambiguous': 'tooltip_ambiguous',
+        'Distribution energy incomplete; run discovery': 'distribution_energy_incomplete',
+        'Distribution does not match displayed total': 'distribution_total_mismatch',
+        'Production and consumption self-use disagree': 'self_consumption_mismatch',
+    }
+    FIELDS = {'production_card', 'consumption_card', 'production_kpi',
+              'grid_export_energy', 'grid_import_energy', 'self_consumption_energy'}
+
+    def __init__(self, message, *, field=None):
+        super().__init__(message)
+        self.reason = self.REASONS.get(message, 'unknown_validation')
+        self.field = field if field in self.FIELDS else None
 
 
 @dataclass(frozen=True)
@@ -61,16 +86,21 @@ class ValueParser:
         return result
 
     @classmethod
-    def parse(cls, text: str, unit: str) -> Quantity:
-        matches = cls.quantities(text, unit)
-        if len(matches) != 1:
-            raise ParseError("Expected one unambiguous quantity")
+    def parse(cls, text: str, unit: str, *, field=None) -> Quantity:
+        try:
+            matches = cls.quantities(text, unit)
+        except ParseError as error:
+            raise ParseError(str(error), field=field) from error
+        if not matches:
+            raise ParseError("Quantity missing", field=field)
+        if len(matches) > 1:
+            raise ParseError("Multiple quantities found", field=field)
         item = matches[0]
         if unit == '°C':
             if not Decimal(-50) <= item.value <= Decimal(80):
-                raise ParseError("Temperature out of range")
+                raise ParseError("Temperature out of range", field=field)
         elif item.value < 0:
-            raise ParseError("Negative quantity")
+            raise ParseError("Negative quantity", field=field)
         if unit == '%' and item.value > 100:
-            raise ParseError("Percentage out of range")
+            raise ParseError("Percentage out of range", field=field)
         return item

@@ -5,6 +5,20 @@ import platform
 import re
 from pathlib import Path
 
+from .parser import ParseError
+from .selectors import SELECTORS
+
+VALIDATION_REASONS = {
+    'Today did not select a single calendar day': 'today_not_single_day',
+    'Unrecognized UI date format; run discovery': 'date_format_unrecognized',
+    'Historical period did not match requested day': 'historical_date_mismatch',
+    'Refusing overlapping or wrong energy period': 'energy_date_mismatch',
+    'Energy cards and production KPI disagree; page still loading': 'production_kpi_mismatch',
+    'Date changed during scrape': 'date_changed_during_scrape',
+    'SolarEdge Today differs from site_timezone; no energy published': 'site_timezone_date_mismatch',
+    'Day changed during scrape; retry before updating counters': 'day_changed_during_scrape',
+}
+
 NETWORK_ERRORS = {
     'ERR_NAME_NOT_RESOLVED', 'ERR_CONNECTION_REFUSED', 'ERR_CONNECTION_RESET',
     'ERR_CONNECTION_CLOSED', 'ERR_CONNECTION_TIMED_OUT', 'ERR_TIMED_OUT',
@@ -38,8 +52,20 @@ def failure_details(error):
     code = found.group(1) if found and found.group(1) in NETWORK_ERRORS else None
     if code == 'ERR_ABORTED':
         kind = 'navigation_interrupted'
-    return {'error_type':name if name in {'Error', 'TimeoutError', 'TargetClosedError', 'RuntimeError', 'ValueError', 'ParseError', 'OSError'} else 'OtherError',
-            'kind':kind, 'network_code':code}
+    result = {'error_type':name if name in {'Error', 'TimeoutError', 'TargetClosedError', 'RuntimeError', 'ValueError', 'ParseError', 'OSError'} else 'OtherError',
+              'kind':kind, 'network_code':code}
+    if isinstance(error, ValueError):
+        result.update(kind='validation', reason=VALIDATION_REASONS.get(message, 'unknown_validation'))
+        if isinstance(error, ParseError):
+            result['reason'] = error.reason if error.reason in ParseError.REASONS.values() else 'unknown_validation'
+            if error.field in ParseError.FIELDS:
+                result['field'] = error.field
+        else:
+            for field in SELECTORS:
+                if message == f'Selector missing or ambiguous: {field}; run mode=discovery':
+                    result.update(reason='selector_missing_or_ambiguous', field=field)
+                    break
+    return result
 
 
 def runtime_details():

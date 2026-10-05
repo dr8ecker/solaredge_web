@@ -83,6 +83,13 @@ Die Gegenrichtung wird nur bei genau einem eindeutig beschrifteten, gültigen po
 - Am 04.10.2026 bestehen im gebauten 0.3.7-AMD64-Container 93 Tests einschließlich echtem Chromium und isoliertem Mosquitto. Ein zusätzlicher Test gegen eine separate Home-Assistant-Instanz wurde lokal übersprungen und bleibt Teil der CI-Prüfung.
 - Die öffentliche SolarEdge-Seite wurde im Docker erneut geprüft: Im normalen Passwortformular sind `type=email`, `name=username`, `type=password` und eine Submit-Aktion vorhanden; das zweite Formular enthält das Firmen-E-Mail-Feld. Der neue Ablauf erkennt eindeutig das normale Formular und wurde vor dem Ausfüllen gestoppt. Es wurden keine echten Zugangsdaten übermittelt. Die Bestätigung auf dem Nutzergerät steht noch aus.
 
+## Ergänzungen in 0.3.8
+
+- Am 05.10.2026 unter Windows mit Playwright und lokalem Chromium 100 Tests ausgeführt: 98 bestanden. Zwei opt-in Prüfungen für einen separaten MQTT-Broker und eine separate Home-Assistant-Instanz wurden mangels Testdiensten übersprungen.
+- Sechs neue Regressionstests prüfen feste Diagnosegründe ohne private Meldungsinhalte, fehlende gegenüber mehrdeutigen/ungültigen Mengen, das betroffene Verteilungs- und Tooltipfeld, die Sicherung des fehlgeschlagenen DOM vor dem Entladen ohne Energieveröffentlichung sowie Wiederholungen und begrenzte Berichtserfassung bei einem fehlgeschlagenen Diagnoseversuch.
+- Die bereitgestellten 0.3.7-Gerätelogs bestätigen akzeptierte Sitzung und wiederholte `ParseError`-Fehler in `dashboard_scrape`, ohne gemeldeten Browserabsturz oder OOM-Kill. Die ursprüngliche Parsermeldung und betroffene Energieansicht fehlen. Die tatsächliche Geräteursache wurde weder reproduziert noch behoben; die Änderung macht den nächsten Fehler unterscheidbar und bewahrt dessen sichtbare DOM-Daten privat.
+- Der aktuelle Docker-Dienst ist lokal nicht verfügbar. Diese Änderung wurde weder im Add-on-Container noch gegen die echte SolarEdge-Anlage oder das Nutzergerät geprüft.
+
 ---
 
 © 2026 [8ecker.de](https://8ecker.de)

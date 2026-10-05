@@ -10,6 +10,7 @@ from app.browser import BrowserManager
 from app.config import Config
 from app.scraper import SolarEdgeScraper
 from app.parser import ParseError
+from app.diagnostics import failure_details
 
 
 class ScraperBrowserTests(unittest.IsolatedAsyncioTestCase):
@@ -126,8 +127,26 @@ class ScraperBrowserTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(ValueError):
             await self.scraper.day_energy(self.browser.page,date(2020,1,1))
         await self.browser.page.locator('[data-tip="Vom Netz: 5 kWh"]').evaluate('el => el.remove()')
-        with self.assertRaises(ParseError):
+        with self.assertRaises(ParseError) as caught:
             await self.scraper.day_energy(self.browser.page,self.day)
+        self.assertEqual(failure_details(caught.exception)['reason'], 'distribution_energy_incomplete')
+        self.assertEqual(failure_details(caught.exception)['field'], 'consumption_card')
+
+    async def test_missing_labels_identify_the_failed_card(self):
+        await self.fixture()
+        await self.browser.page.locator('#distribution-component-produktion [data-tip]').evaluate_all('els=>els.forEach(el=>el.remove())')
+        with self.assertRaises(ParseError) as caught:
+            await self.scraper.day_energy(self.browser.page, self.day)
+        self.assertEqual(failure_details(caught.exception)['reason'], 'distribution_labels_missing')
+        self.assertEqual(failure_details(caught.exception)['field'], 'production_card')
+
+    async def test_invalid_tooltip_quantity_identifies_the_energy_field(self):
+        await self.fixture()
+        await self.browser.page.locator('[data-tip="Vom Netz: 5 kWh"]').evaluate('el=>el.dataset.tip="Vom Netz: Loading"')
+        with self.assertRaises(ParseError) as caught:
+            await self.scraper.day_energy(self.browser.page, self.day)
+        self.assertEqual(failure_details(caught.exception)['reason'], 'quantity_missing')
+        self.assertEqual(failure_details(caught.exception)['field'], 'grid_import_energy')
 
     async def test_return_from_past_day_waits_for_energy_not_just_date_input(self):
         await self.fixture()

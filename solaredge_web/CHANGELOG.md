@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.8
+
+- Dashboard-Validierungsfehler nennen einen festen Fehlergrund und bei Parserfehlern das betroffene Energiefeld. Fehlende und mehrdeutige Mengen, fehlende Verteilungslabels, unvollständige Teilmengen und abweichende Energiebilanzen sind dadurch unterscheidbar.
+- Bei einem Validierungsfehler wird die aktuelle sichtbare Dashboardansicht automatisch als bereinigter privater Bericht gesichert, bevor der Browser die Seite entlädt. Pro Fehlergrund und Feld wird bis zum nächsten erfolgreichen Abruf nur ein Bericht gespeichert; Diagnosefehler beenden die Wiederholungen nicht.
+- Die Ursache der am 05.10.2026 gemeldeten wiederholten `ParseError`-Fehler ist mit den bisherigen Logs noch nicht bestimmt. Diese Änderung verbessert die Diagnose und ist keine bestätigte Behebung des Gerätefehlers.
+
 ## 0.3.7
 
 - Loginfelder werden innerhalb des eindeutigen sichtbaren Passwortformulars anhand von Feldtyp, Benutzername-Merkmalen oder deutschen/englischen Beschriftungen erkannt. Das exakte englische Label „Email address“ ist nicht mehr erforderlich.

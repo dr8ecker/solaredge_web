@@ -103,9 +103,9 @@ class SolarEdgeScraper:
         quantities = {}
         production = await unique(page, 'production_card')
         consumption = await unique(page, 'consumption_card')
-        quantities['pv_energy'] = ValueParser.parse(await production.inner_text(), 'kWh')
-        quantities['consumption_energy'] = ValueParser.parse(await consumption.inner_text(), 'kWh')
-        kpi = ValueParser.parse(await (await unique(page, 'kpis')).inner_text(), 'kWh')
+        quantities['pv_energy'] = ValueParser.parse(await production.inner_text(), 'kWh', field='production_card')
+        quantities['consumption_energy'] = ValueParser.parse(await consumption.inner_text(), 'kWh', field='consumption_card')
+        kpi = ValueParser.parse(await (await unique(page, 'kpis')).inner_text(), 'kWh', field='production_kpi')
         if abs(kpi.value - quantities['pv_energy'].value) > max(kpi.resolution, quantities['pv_energy'].resolution):
             raise ValueError("Energy cards and production KPI disagree; page still loading")
         # Zero totals can establish a component even when its percentage label
@@ -116,8 +116,8 @@ class SolarEdgeScraper:
         if quantities['consumption_energy'].value == 0:
             quantities['grid_import_energy'] = quantities['consumption_energy']
             quantities['self_consumption_energy'] = quantities['consumption_energy']
-        for card, allowed in ((production, {'grid_export_energy', 'self_consumption_energy'}),
-                              (consumption, {'grid_import_energy', 'self_consumption_energy'})):
+        for card, card_name, allowed in ((production, 'production_card', {'grid_export_energy', 'self_consumption_energy'}),
+                                         (consumption, 'consumption_card', {'grid_import_energy', 'self_consumption_energy'})):
             total = quantities['pv_energy' if card is production else 'consumption_energy']
             if total.value == 0:
                 # A displayed zero total of nonnegative components proves zero.
@@ -126,7 +126,7 @@ class SolarEdgeScraper:
                 continue
             labels = card.get_by_text(re.compile(r'^\d+(?:[.,]\d+)?\s*%$'))
             if await labels.count() == 0:
-                raise ParseError("Distribution labels missing; no zero assumed")
+                raise ParseError("Distribution labels missing; no zero assumed", field=card_name)
             parts = {}
             for label in await labels.all():
                 # Dismiss the previous tooltip even when both portions say 50%.
@@ -137,7 +137,7 @@ class SolarEdgeScraper:
                 await page.wait_for_function("percent => Array.from(document.querySelectorAll('[role=tooltip]')).some(el => el.getClientRects().length && el.innerText.trim().startsWith(percent + ' '))", arg=percent, timeout=5000)
                 tooltip = page.get_by_role('tooltip')
                 if await tooltip.count() != 1:
-                    raise ParseError("Tooltip is ambiguous")
+                    raise ParseError("Tooltip is ambiguous", field=card_name)
                 text = await tooltip.inner_text()
                 key = None
                 for name, words in (
@@ -149,20 +149,20 @@ class SolarEdgeScraper:
                         key = name
                         break
                 if key:
-                    parts[key] = ValueParser.parse(text, 'kWh')
+                    parts[key] = ValueParser.parse(text, 'kWh', field=key)
             # Do not fill in an absent portion from rounded percentages.
             for key in allowed - parts.keys():
                 if key == 'self_consumption_energy' and key in quantities and quantities[key].value == 0:
                     parts[key] = quantities[key]
             if not allowed <= parts.keys():
-                raise ParseError("Distribution energy incomplete; run discovery")
+                raise ParseError("Distribution energy incomplete; run discovery", field=card_name)
             difference = abs(sum(q.value for q in parts.values()) - total.value)
             tolerance = total.resolution + sum(q.resolution for q in parts.values())
             if difference > tolerance:
-                raise ParseError("Distribution does not match displayed total")
+                raise ParseError("Distribution does not match displayed total", field=card_name)
             for key, quantity in parts.items():
                 if key in quantities and abs(quantities[key].value - quantity.value) > max(quantities[key].resolution, quantity.resolution):
-                    raise ParseError("Production and consumption self-use disagree")
+                    raise ParseError("Production and consumption self-use disagree", field=key)
                 quantities[key] = quantity
         await page.mouse.move(0, 0)
         if await self.selected_dates(page) != (expected, expected):

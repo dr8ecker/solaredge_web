@@ -39,7 +39,9 @@ Die Messwerte erscheinen nach Abschluss des jeweiligen Abrufs. Auch nach Mittern
 
 ## Stand
 
-**0.3.7**. Login, Session, echte Tageswerte, Datumwechsel, MQTT und Energie-Dashboard wurden in AMD64-Containern mit separatem Home Assistant geprüft. Der Nutzer hat auf seinem x86-64-Home-Assistant erfolgreiche MQTT-Verbindung, Chromium-Start, Login und einen vollständigen Abruf mit gespeichertem Energie-Ledger bestätigt. ARM64 lässt sich bauen; ein nativer ARM64-Lauf und mehrtägiger Dauerbetrieb sind noch nicht bestätigt. Die Tageswerte und der Historienimport wurden für 0.3.0 zusätzlich mit echtem SolarEdge-Abruf und einer getrennten HA-Testinstanz geprüft. Die Login-Korrektur in 0.3.4 wurde mit lokalen Browser-Regressionstests geprüft; eine Bestätigung auf dem Home-Assistant-Gerät steht noch aus. Einzelne Prüfergebnisse und ihr Versionsstand stehen in [VALIDATION.md](solaredge_web/VALIDATION.md).
+**0.3.8** ergänzt konkrete Dashboard-Fehlergründe und einen automatisch gespeicherten privaten Bericht der fehlgeschlagenen Energieansicht. 98 lokale Tests bestanden; die Ursache der am 05.10.2026 gemeldeten Parserfehler auf dem Nutzergerät ist noch nicht bestimmt.
+
+Login, Session, echte Tageswerte, Datumwechsel, MQTT und Energie-Dashboard wurden für frühere Versionen in AMD64-Containern mit separatem Home Assistant geprüft. Der Nutzer hat auf seinem x86-64-Home-Assistant erfolgreiche MQTT-Verbindung, Chromium-Start, Login und einen vollständigen Abruf mit gespeichertem Energie-Ledger bestätigt. ARM64 lässt sich bauen; ein nativer ARM64-Lauf und mehrtägiger Dauerbetrieb sind noch nicht bestätigt. Die Tageswerte und der Historienimport wurden für 0.3.0 zusätzlich mit echtem SolarEdge-Abruf und einer getrennten HA-Testinstanz geprüft. Einzelne Prüfergebnisse und ihr Versionsstand stehen in [VALIDATION.md](solaredge_web/VALIDATION.md).
 
 - [Konfiguration, Sensoren und Fehlersuche](solaredge_web/DOCS.md)
 - [Energiezähler und Tageswechsel](solaredge_web/ENERGY-DESIGN.md)
