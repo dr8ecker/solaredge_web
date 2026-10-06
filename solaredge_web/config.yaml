@@ -1,6 +1,6 @@
 # Copyright (c) 2026 8ecker.de
 name: SolarEdge Web Scraper
-version: 0.3.8
+version: 0.3.9
 slug: solaredge_web
 description: SolarEdge-Weboberfläche mit persistenten Energiezählern und MQTT für
   Home Assistant. © 2026 8ecker.de

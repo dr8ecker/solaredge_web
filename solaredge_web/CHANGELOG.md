@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.9
+
+- Englische Energie-Beschriftungen `From Solar` und `To Building` werden als PV-Eigenverbrauch erkannt. Ein gelesener `From Solar`-Tooltip lässt die Verbrauchsaufteilung damit nicht mehr als unvollständig scheitern.
+- Englische Leistungsrichtungen `Exporting` und `Importing` werden erkannt. Die sichtbaren kWh-/W-Werte und die vorhandenen Bilanzprüfungen bleiben maßgeblich; gerundete Prozentanteile werden nicht zur Berechnung verwendet.
+- Zwei neue Browser-Regressionstests für den isolierten `From Solar`-Fehler und die vollständige englische Energieaufteilung; vorhandener Richtungswechseltest um `Exporting`/`Importing` erweitert.
+
 ## 0.3.8
 
 - Dashboard-Validierungsfehler nennen einen festen Fehlergrund und bei Parserfehlern das betroffene Energiefeld. Fehlende und mehrdeutige Mengen, fehlende Verteilungslabels, unvollständige Teilmengen und abweichende Energiebilanzen sind dadurch unterscheidbar.

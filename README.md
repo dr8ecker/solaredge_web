@@ -39,7 +39,7 @@ Die Messwerte erscheinen nach Abschluss des jeweiligen Abrufs. Auch nach Mittern
 
 ## Stand
 
-**0.3.8** ergänzt konkrete Dashboard-Fehlergründe und einen automatisch gespeicherten privaten Bericht der fehlgeschlagenen Energieansicht. 98 lokale Tests bestanden; die Ursache der am 05.10.2026 gemeldeten Parserfehler auf dem Nutzergerät ist noch nicht bestimmt.
+**0.3.9** erkennt zusätzlich die englischen Beschriftungen `From Solar`, `To Building`, `Exporting` und `Importing`. Der mit `From Solar` reproduzierte Fehler bei der Verbrauchsaufteilung ist in lokalen Browser-Tests behoben; die Bestätigung auf dem Nutzergerät steht noch aus. Konkrete Dashboard-Fehlergründe und private Diagnoseberichte stehen seit 0.3.8 bereit.
 
 Login, Session, echte Tageswerte, Datumwechsel, MQTT und Energie-Dashboard wurden für frühere Versionen in AMD64-Containern mit separatem Home Assistant geprüft. Der Nutzer hat auf seinem x86-64-Home-Assistant erfolgreiche MQTT-Verbindung, Chromium-Start, Login und einen vollständigen Abruf mit gespeichertem Energie-Ledger bestätigt. ARM64 lässt sich bauen; ein nativer ARM64-Lauf und mehrtägiger Dauerbetrieb sind noch nicht bestätigt. Die Tageswerte und der Historienimport wurden für 0.3.0 zusätzlich mit echtem SolarEdge-Abruf und einer getrennten HA-Testinstanz geprüft. Einzelne Prüfergebnisse und ihr Versionsstand stehen in [VALIDATION.md](solaredge_web/VALIDATION.md).
 

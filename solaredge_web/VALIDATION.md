@@ -90,6 +90,12 @@ Die Gegenrichtung wird nur bei genau einem eindeutig beschrifteten, gültigen po
 - Die bereitgestellten 0.3.7-Gerätelogs bestätigen akzeptierte Sitzung und wiederholte `ParseError`-Fehler in `dashboard_scrape`, ohne gemeldeten Browserabsturz oder OOM-Kill. Die ursprüngliche Parsermeldung und betroffene Energieansicht fehlen. Die tatsächliche Geräteursache wurde weder reproduziert noch behoben; die Änderung macht den nächsten Fehler unterscheidbar und bewahrt dessen sichtbare DOM-Daten privat.
 - Der aktuelle Docker-Dienst ist lokal nicht verfügbar. Diese Änderung wurde weder im Add-on-Container noch gegen die echte SolarEdge-Anlage oder das Nutzergerät geprüft.
 
+## Ergänzungen in 0.3.9
+
+- Am 06.10.2026 zeigen die bereitgestellten Screenshots die englischen Legenden `From Solar` und `To Building` sowie die Leistungsrichtung `Exporting`. Diese Beschriftungen fehlten in den bisherigen Keywords. Die Screenshots enthalten keine geöffneten Energie-Tooltips; deren DOM und genaue kWh-Werte wurden damit nicht live verifiziert.
+- Zwei neue Tests mit synthetischem DOM und expliziten Tooltip-Mengen schlagen gegen den unveränderten 0.3.8-Code fehl. Der isolierte `From Solar`-Test reproduziert `distribution_energy_incomplete` in der Verbrauchskarte; die vollständig englische Verteilung scheitert zusätzlich an `To Building`. Beide bestehen mit der Korrektur. Der vorhandene Browser-Richtungswechseltest prüft zusätzlich `Exporting` und `Importing`.
+- Unter Windows mit Playwright und lokalem Chromium 102 Tests ausgeführt: 100 bestanden. Zwei opt-in Prüfungen für separate MQTT- und Home-Assistant-Testdienste wurden übersprungen. Die Bestätigung der Korrektur auf dem Nutzergerät steht noch aus.
+
 ---
 
 © 2026 [8ecker.de](https://8ecker.de)

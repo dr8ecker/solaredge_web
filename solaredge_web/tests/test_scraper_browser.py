@@ -60,6 +60,35 @@ class ScraperBrowserTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(sample.values['grid_export_energy'],5)
         self.assertEqual(sample.values['self_consumption_energy'],5)
 
+    async def test_from_solar_consumption_label_reads_explicit_energy(self):
+        # English wording observed in the user's screenshot; quantities are
+        # synthetic tooltip values, not inferred from the rounded percentages.
+        await self.fixture()
+        await self.browser.page.locator('[data-tip="Aus PV-Energie: 5 kWh"]').evaluate('el=>el.dataset.tip="From Solar: 5 kWh"')
+        sample = await self.scraper.day_energy(self.browser.page, self.day)
+        self.assertEqual(sample.values['self_consumption_energy'], 5)
+        self.assertEqual(sample.values['grid_import_energy'], 5)
+
+    async def test_english_distribution_labels_read_all_energy_fields(self):
+        await self.fixture()
+        await self.browser.page.evaluate('''() => {
+          const translations = {'Ins Netz': 'To Grid', 'Ins Gebäude': 'To Building',
+                                'Vom Netz': 'From Grid', 'Aus PV-Energie': 'From Solar'};
+          for (const el of document.querySelectorAll('[data-tip]')) {
+            for (const [original, translated] of Object.entries(translations)) {
+              el.dataset.tip = el.dataset.tip.replace(original, translated);
+            }
+          }
+          document.querySelector('[role=combobox]').textContent = 'Day';
+          document.querySelector('[data-testid=today-button]').textContent = 'Today';
+          document.querySelector('[data-testid=power-energy-chart-component] button').textContent = 'Energy';
+        }''')
+        self.assertEqual(await self.scraper.select_today(self.browser.page), self.day)
+        sample = await self.scraper.day_energy(self.browser.page, self.day)
+        self.assertEqual(sample.values, {'pv_energy': 10, 'consumption_energy': 10,
+                                       'grid_export_energy': 5, 'grid_import_energy': 5,
+                                       'self_consumption_energy': 5})
+
     async def test_nominal_rating_is_not_the_pv_measurement(self):
         await self.fixture()
         result = await self.scraper.live(self.browser.page)
@@ -75,6 +104,8 @@ class ScraperBrowserTests(unittest.IsolatedAsyncioTestCase):
             ('Importiert', '730 W', 'grid_import_power', 730),
             ('To Grid', '2,4 kW', 'grid_export_power', 2400),
             ('From Grid', '0.5 kW', 'grid_import_power', 500),
+            ('Exporting', '2.7 kW', 'grid_export_power', 2700),
+            ('Importing', '730 W', 'grid_import_power', 730),
         ):
             with self.subTest(label=label):
                 await flow.evaluate('(el, text) => el.querySelector("svg").innerHTML = text', f'<text>{label}</text><text>{value}</text><text>Last</text><text>730 W</text>')

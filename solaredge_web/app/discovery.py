@@ -10,9 +10,9 @@ from .files import write_private_json
 KEYWORDS = {
     "production": ["Produktion", "Produzieren", "Produzierte Energie", "Live-PV-Erzeugung", "Production", "Producing"],
     "consumption": ["Verbrauch", "Last", "Consumption", "Load"],
-    "grid_export": ["Exportieren", "Ins Netz", "Einspeisung", "Export", "Grid Export", "To Grid"],
-    "grid_import": ["Importiert", "Importieren", "Vom Netz", "Netzbezug", "Import", "Grid Import", "From Grid"],
-    "pv_to_home": ["Ins Gebäude", "Aus PV-Energie", "PV Energy"],
+    "grid_export": ["Exportieren", "Ins Netz", "Einspeisung", "Export", "Exporting", "Grid Export", "To Grid"],
+    "grid_import": ["Importiert", "Importieren", "Vom Netz", "Netzbezug", "Import", "Importing", "Grid Import", "From Grid"],
+    "pv_to_home": ["Ins Gebäude", "Aus PV-Energie", "PV Energy", "To Building", "From Solar"],
     "battery": ["Battery", "Charging", "Discharging", "Batterie", "Laden", "Entladen"],
     "status": ["Online", "Offline", "Lokale Zeit", "Aktualisiert", "Heute", "Today", "Updated", "Local time"],
 }
