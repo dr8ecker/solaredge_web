@@ -29,10 +29,11 @@ class ParseError(ValueError):
     FIELDS = {'production_card', 'consumption_card', 'production_kpi',
               'grid_export_energy', 'grid_import_energy', 'self_consumption_energy'}
 
-    def __init__(self, message, *, field=None):
+    def __init__(self, message, *, field=None, missing_fields=()):
         super().__init__(message)
         self.reason = self.REASONS.get(message, 'unknown_validation')
         self.field = field if field in self.FIELDS else None
+        self.missing_fields = tuple(sorted(set(missing_fields) & self.FIELDS))
 
 
 @dataclass(frozen=True)

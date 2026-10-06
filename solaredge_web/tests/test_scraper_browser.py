@@ -89,6 +89,61 @@ class ScraperBrowserTests(unittest.IsolatedAsyncioTestCase):
                                        'grid_export_energy': 5, 'grid_import_energy': 5,
                                        'self_consumption_energy': 5})
 
+    async def test_german_tooltips_and_rounded_totals_from_screenshots(self):
+        # This reproduces visible values and wording, not the private live DOM.
+        await self.fixture(production='46', consumption='7.34')
+        await self.browser.page.evaluate('''() => {
+          const tips = [
+            ['#distribution-component-produktion', [['89%', 'Ins Netz: 41.1 kWh'], ['11%', 'Ins Gebäude: 4.85 kWh']]],
+            ['#distribution-component-verbrauch', [['34%', 'Vom Netz: 2.5 kWh'], ['66%', 'Aus PV-Energie: 4.85 kWh']]],
+          ];
+          for (const [scope, values] of tips) {
+            document.querySelectorAll(scope + ' [data-tip]').forEach((el, i) => {
+              el.textContent = values[i][0]; el.dataset.tip = values[i][1];
+            });
+          }
+        }''')
+        sample = await self.scraper.day_energy(self.browser.page, self.day)
+        self.assertEqual({key: str(value) for key, value in sample.values.items()},
+                         {'pv_energy': '46', 'consumption_energy': '7.34',
+                          'grid_export_energy': '41.1', 'grid_import_energy': '2.5',
+                          'self_consumption_energy': '4.85'})
+
+    async def test_consumption_reuses_explicit_production_self_use_when_pv_label_is_absent(self):
+        await self.fixture()
+        await self.browser.page.locator('[data-tip="Aus PV-Energie: 5 kWh"]').evaluate('el => el.remove()')
+        sample = await self.scraper.day_energy(self.browser.page, self.day)
+        self.assertEqual(sample.values['self_consumption_energy'], 5)
+        self.assertEqual(sample.values['grid_import_energy'], 5)
+        self.assertEqual(str(sample.resolutions['self_consumption_energy']), '1')
+
+    async def test_shared_self_use_never_accepts_a_mismatched_consumption_total(self):
+        await self.fixture(consumption='20')
+        await self.browser.page.locator('[data-tip="Aus PV-Energie: 5 kWh"]').evaluate('el => el.remove()')
+        with self.assertRaises(ParseError) as caught:
+            await self.scraper.day_energy(self.browser.page, self.day)
+        self.assertEqual(caught.exception.reason, 'distribution_total_mismatch')
+
+    async def test_unrecognized_pv_tooltip_remains_an_error(self):
+        await self.fixture()
+        await self.browser.page.locator('[data-tip="Aus PV-Energie: 5 kWh"]').evaluate('el => el.dataset.tip="Unrecognized component: 5 kWh"')
+        with self.assertRaises(ParseError) as caught:
+            await self.scraper.day_energy(self.browser.page, self.day)
+        self.assertEqual(caught.exception.reason, 'distribution_energy_incomplete')
+        self.assertEqual(failure_details(caught.exception)['missing_fields'], ['self_consumption_energy'])
+
+    async def test_german_and_english_labels_accept_typographic_spaces_and_hyphens(self):
+        # A conflicting quantity must still be read and rejected. This proves
+        # matching works rather than silently using the production fallback.
+        for text in ('Aus\u00a0PV\u2011Energie', 'Aus PV\u2013Energie',
+                     'From\u202fSolar', 'PV\u2010Energy'):
+            with self.subTest(text=text):
+                await self.fixture()
+                await self.browser.page.locator('[data-tip="Aus PV-Energie: 5 kWh"]').evaluate('(el, tip) => el.dataset.tip=tip', text + ': 15 kWh')
+                with self.assertRaises(ParseError) as caught:
+                    await self.scraper.day_energy(self.browser.page, self.day)
+                self.assertEqual(caught.exception.reason, 'distribution_total_mismatch')
+
     async def test_nominal_rating_is_not_the_pv_measurement(self):
         await self.fixture()
         result = await self.scraper.live(self.browser.page)
@@ -162,6 +217,7 @@ class ScraperBrowserTests(unittest.IsolatedAsyncioTestCase):
             await self.scraper.day_energy(self.browser.page,self.day)
         self.assertEqual(failure_details(caught.exception)['reason'], 'distribution_energy_incomplete')
         self.assertEqual(failure_details(caught.exception)['field'], 'consumption_card')
+        self.assertEqual(failure_details(caught.exception)['missing_fields'], ['grid_import_energy'])
 
     async def test_missing_labels_identify_the_failed_card(self):
         await self.fixture()

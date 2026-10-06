@@ -33,6 +33,10 @@ class DiagnosticTests(unittest.TestCase):
         self.assertEqual(failure_details(error)['field'], 'production_card')
         self.assertEqual(failure_details(ValueError('Energy cards and production KPI disagree; page still loading'))['reason'], 'production_kpi_mismatch')
         self.assertEqual(failure_details(ValueError('Selector missing or ambiguous: kpis; run mode=discovery'))['field'], 'kpis')
+        error = ParseError('Distribution energy incomplete; run discovery', field='consumption_card',
+                           missing_fields=('self_consumption_energy', 'PRIVATE'))
+        self.assertEqual(failure_details(error)['missing_fields'], ['self_consumption_energy'])
+        self.assertNotIn('PRIVATE', json.dumps(failure_details(error)))
 
     def test_quantity_diagnostics_distinguish_absent_ambiguous_and_invalid_numbers(self):
         for text, reason in (('Loading', 'quantity_missing'),

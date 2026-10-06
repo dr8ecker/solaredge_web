@@ -141,6 +141,10 @@ Ab **0.3.8** stehen bei Dashboard-Validierungsfehlern in `Dashboard failure deta
 
 Ab **0.3.9** werden auch `From Solar` und `To Building` als PV-Eigenverbrauch sowie `Exporting`/`Importing` als Leistungsrichtungen erkannt. Bei englischer Oberfläche konnte ein `From Solar`-Tooltip vorher trotz lesbarer kWh-Menge zu `distribution_energy_incomplete` in `consumption_card` führen. Die Mengen werden weiterhin aus den Tooltips gelesen, nicht aus den gerundeten Prozentanteilen berechnet.
 
+Deutsch und Englisch werden gleichzeitig unterstützt; dafür ist keine Sprachoption im Add-on nötig. Unterstützte Energie-Labels sind `Ins Netz`/`To Grid`, `Vom Netz`/`From Grid`, `Ins Gebäude`/`To Building` sowie `Aus PV-Energie`/`From Solar`/`PV Energy`. Ab **0.3.10** toleriert der Labelvergleich auch geschützte Leerzeichen und verschiedene Bindestriche. Bei `distribution_energy_incomplete` nennt `missing_fields` die fehlende Menge, beispielsweise `grid_import_energy` oder `self_consumption_energy`.
+
+Fehlt der PV-Anteil als zweites Verbrauchslabel, kann dessen ausdrücklich gelesene Menge aus der Produktionskarte übernommen werden. Dazu müssen Netzbezug und Verbrauchssumme vollständig gelesen werden und die Bilanzprüfung bestehen. Ein unbekannter oder ungültiger Tooltip wird dadurch nicht übergangen.
+
 Sie sichert außerdem automatisch `/data/runtime/dashboard_failure_report.json`, auch bei `debug: false` und im normalen Modus. Der Bericht enthält bereinigte sichtbare DOM-Elemente und die Fehlerkategorie aus dem fehlgeschlagenen Versuch. Die Seite wird dafür weder neu geladen noch umgeschaltet. Ein neuer Fehlergrund oder ein Fehler nach einem erfolgreichen Abruf ersetzt den Bericht; identische wiederholte Fehler überschreiben ihn nicht. Die Erfassung wartet höchstens zehn Sekunden. Ein Fehler beim Speichern unterbricht die normalen Wiederholungen nicht. Der Bericht kann Anlagen-/Energiedaten enthalten; vor Weitergabe prüfen.
 
 `mode: smoke_test` prüft ausschließlich den Browser und die öffentliche Monitoring-Seite. Kein Login, kein Energieabruf, kein MQTT.

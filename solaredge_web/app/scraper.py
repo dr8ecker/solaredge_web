@@ -2,6 +2,7 @@
 """Read quantities from rendered cards, SVG text and visible hover tooltips."""
 
 import re
+import unicodedata
 from datetime import date, datetime, timezone
 from decimal import Decimal
 from zoneinfo import ZoneInfo
@@ -15,6 +16,13 @@ from .selectors import unique
 class SolarEdgeScraper:
     def __init__(self, config):
         self.config = config
+
+    @staticmethod
+    def normalize_label(text):
+        """Keep German/English words stable across visual typography variants."""
+        text = unicodedata.normalize('NFKC', text)
+        text = re.sub(r'[-\u2010-\u2015\u2212]', ' ', text)
+        return ' '.join(text.split()).casefold()
 
     @staticmethod
     def grid_power(text):
@@ -128,6 +136,7 @@ class SolarEdgeScraper:
             if await labels.count() == 0:
                 raise ParseError("Distribution labels missing; no zero assumed", field=card_name)
             parts = {}
+            unrecognized_tooltip = False
             for label in await labels.all():
                 # Dismiss the previous tooltip even when both portions say 50%.
                 await page.mouse.move(0, 0)
@@ -139,23 +148,30 @@ class SolarEdgeScraper:
                 if await tooltip.count() != 1:
                     raise ParseError("Tooltip is ambiguous", field=card_name)
                 text = await tooltip.inner_text()
+                normalized = self.normalize_label(text)
                 key = None
                 for name, words in (
                     ('grid_export_energy', KEYWORDS['grid_export']),
                     ('grid_import_energy', KEYWORDS['grid_import']),
                     ('self_consumption_energy', KEYWORDS['pv_to_home']),
                 ):
-                    if name in allowed and any(word.lower() in text.lower() for word in words):
+                    if name in allowed and any(self.normalize_label(word) in normalized for word in words):
                         key = name
                         break
                 if key:
                     parts[key] = ValueParser.parse(text, 'kWh', field=key)
-            # Do not fill in an absent portion from rounded percentages.
+                else:
+                    unrecognized_tooltip = True
+            # Self-use is the same energy in both cards. Reuse the explicit
+            # production quantity, including its resolution, if the second
+            # label is absent. Unknown tooltips remain errors. Require an import
+            # and a matching consumption total; never derive it from percent.
             for key in allowed - parts.keys():
-                if key == 'self_consumption_energy' and key in quantities and quantities[key].value == 0:
+                if key == 'self_consumption_energy' and key in quantities and not unrecognized_tooltip:
                     parts[key] = quantities[key]
             if not allowed <= parts.keys():
-                raise ParseError("Distribution energy incomplete; run discovery", field=card_name)
+                raise ParseError("Distribution energy incomplete; run discovery", field=card_name,
+                                 missing_fields=allowed - parts.keys())
             difference = abs(sum(q.value for q in parts.values()) - total.value)
             tolerance = total.resolution + sum(q.resolution for q in parts.values())
             if difference > tolerance:

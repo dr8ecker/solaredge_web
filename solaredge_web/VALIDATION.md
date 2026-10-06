@@ -96,6 +96,12 @@ Die Gegenrichtung wird nur bei genau einem eindeutig beschrifteten, gültigen po
 - Zwei neue Tests mit synthetischem DOM und expliziten Tooltip-Mengen schlagen gegen den unveränderten 0.3.8-Code fehl. Der isolierte `From Solar`-Test reproduziert `distribution_energy_incomplete` in der Verbrauchskarte; die vollständig englische Verteilung scheitert zusätzlich an `To Building`. Beide bestehen mit der Korrektur. Der vorhandene Browser-Richtungswechseltest prüft zusätzlich `Exporting` und `Importing`.
 - Unter Windows mit Playwright und lokalem Chromium 102 Tests ausgeführt: 100 bestanden. Zwei opt-in Prüfungen für separate MQTT- und Home-Assistant-Testdienste wurden übersprungen. Die Bestätigung der Korrektur auf dem Nutzergerät steht noch aus.
 
+## Ergänzungen in 0.3.10
+
+- Die am 06.10.2026 bereitgestellten vier deutschen Tooltip-Screenshots zeigen `Ins Netz`, `Ins Gebäude`, `Vom Netz` und `Aus PV-Energie`. Ein synthetischer Browser-Test mit genau diesen sichtbaren Texten und Mengen besteht bereits gegen 0.3.9: 46 kWh Produktion, 41.1 kWh Einspeisung, 4.85 kWh Eigenverbrauch, 7.34 kWh Verbrauch und 2.5 kWh Netzbezug. Die Rundungsdifferenzen liegen innerhalb der bisherigen Prüfgrenzen. Ein Screenshot beweist weder die Unicode-Zeichen noch die DOM-Struktur der Add-on-Seite; die verbleibende Geräteursache ist nicht bestätigt.
+- Fünf neue Browser-Tests prüfen die Screenshot-Mengen, den übernommenen ausdrücklich gelesenen PV-Eigenverbrauch bei fehlendem zweitem Label, unverändert abgewiesene widersprüchliche Verbrauchssummen und unbekannte Tooltips sowie deutsche/englische Labels mit geschützten Leerzeichen und Bindestrichvarianten. Der Test mit fehlendem positivem PV-Verbrauchslabel scheitert zunächst gegen 0.3.9 und besteht mit der Korrektur. Der Typografietest verwendet absichtlich widersprüchliche Tooltip-Mengen und prüft deren Ablehnung, damit ein unerkanntes Label nicht durch einen Ersatzwert verdeckt werden kann.
+- Unter Windows mit Playwright und lokalem Chromium 107 Tests ausgeführt: 105 bestanden, zwei Prüfungen für separate MQTT- und Home-Assistant-Testdienste übersprungen. Fehlende Felder erscheinen ausschließlich als feste Feldnamen in der Diagnose. Die Bestätigung auf dem Nutzergerät steht noch aus.
+
 ---
 
 © 2026 [8ecker.de](https://8ecker.de)

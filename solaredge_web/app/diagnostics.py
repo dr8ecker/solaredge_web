@@ -60,6 +60,9 @@ def failure_details(error):
             result['reason'] = error.reason if error.reason in ParseError.REASONS.values() else 'unknown_validation'
             if error.field in ParseError.FIELDS:
                 result['field'] = error.field
+            missing = sorted(set(error.missing_fields) & ParseError.FIELDS)
+            if missing:
+                result['missing_fields'] = missing
         else:
             for field in SELECTORS:
                 if message == f'Selector missing or ambiguous: {field}; run mode=discovery':

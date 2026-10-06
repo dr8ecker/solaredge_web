@@ -208,7 +208,7 @@ async def run_normal(config, *, once=False):
                            'page_crashed':browser.page_crashed, **runtime_details()}
                 LOGGER.warning('Dashboard failure details: %s', details)
                 if isinstance(error, ValueError):
-                    signature = (details['reason'], details.get('field'))
+                    signature = (details['reason'], details.get('field'), tuple(details.get('missing_fields', ())))
                     if browser.stage == 'dashboard_scrape' and browser.usable and signature not in reported_failures:
                         try:
                             # Preserve the failed UI before idle discards it. One

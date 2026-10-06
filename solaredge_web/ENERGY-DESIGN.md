@@ -16,6 +16,8 @@ Sinkende Tagesstände werden als Rundung/Korrektur protokolliert; der vorherige 
 
 Eine ausdrücklich angezeigte Null-Gesamtenergie beweist bei nichtnegativen Komponenten Null. Ein fehlender Tooltip oder ein gerundetes 100%-Label allein beweist keine Null.
 
+Ab 0.3.10 darf ein fehlendes PV-Verbrauchslabel die ausdrücklich gelesene PV-Eigenverbrauchsmenge aus der Produktionskarte wiederverwenden, einschließlich ihrer Rundungsauflösung. Netzbezug wird weiterhin separat aus seinem Tooltip gelesen; beide Mengen müssen die Verbrauchssumme innerhalb der Rundungsauflösung ergeben. Unbekannte oder ungültige Tooltips werden nicht durch diese Wiederverwendung ersetzt. Deutsche und englische Beschriftungen werden parallel erkannt; typografische Leerzeichen und Bindestriche ändern nur den Labelvergleich, nicht die gelesenen Mengen.
+
 ## Home Assistant
 
 Die dauerhaften kWh-Gesamtzähler werden als `device_class: energy`, `state_class: total` ohne `last_reset` veröffentlicht. Die reine Tagesanzeige hat keine Zähler-State-Class und ist nicht für das Energie-Dashboard gedacht. Diese Wahl folgt den [Home-Assistant-Sensorregeln](https://developers.home-assistant.io/docs/core/entity/sensor/#how-to-choose-state_class-and-last_reset).

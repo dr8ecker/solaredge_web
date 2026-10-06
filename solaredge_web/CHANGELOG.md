@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.10
+
+- Deutsche und englische Energie-Beschriftungen werden parallel erkannt; geschützte Leerzeichen, Unicode-Zeichenformen und Bindestrichvarianten werden für den Labelvergleich vereinheitlicht. Messwerte werden weiterhin aus den ursprünglichen Tooltip-Texten gelesen.
+- Bei einem fehlenden PV-Verbrauchslabel kann der bereits ausdrücklich gelesene PV-Eigenverbrauch aus der Produktionskarte verwendet werden. Netzbezug muss weiterhin ausdrücklich gelesen werden und zur Verbrauchssumme passen. Unbekannte oder ungültige Tooltips und widersprüchliche Summen bleiben Fehler; fehlende Werte werden nicht aus Prozentanteilen berechnet.
+- Unvollständige Verteilungen nennen mit `missing_fields` die tatsächlich fehlenden Energiefelder. Ein Wechsel des fehlenden Felds erzeugt einen neuen privaten Fehlerbericht.
+- Die deutschen Screenshot-Texte und Mengen wurden bereits mit 0.3.9 korrekt gelesen. Die genaue Ursache des verbleibenden Gerätefehlers ist damit noch nicht bestätigt.
+
 ## 0.3.9
 
 - Englische Energie-Beschriftungen `From Solar` und `To Building` werden als PV-Eigenverbrauch erkannt. Ein gelesener `From Solar`-Tooltip lässt die Verbrauchsaufteilung damit nicht mehr als unvollständig scheitern.
