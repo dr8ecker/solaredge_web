@@ -109,6 +109,45 @@ class ScraperBrowserTests(unittest.IsolatedAsyncioTestCase):
                           'grid_export_energy': '41.1', 'grid_import_energy': '2.5',
                           'self_consumption_energy': '4.85'})
 
+    async def test_narrow_layout_hides_import_label_but_wider_layout_reads_its_tooltip(self):
+        await self.fixture()
+        await self.browser.page.set_viewport_size({'width': 1440, 'height': 1000})
+        await self.browser.page.evaluate('''() => {
+          const label = document.querySelector('[data-tip="Vom Netz: 5 kWh"]');
+          const render = () => label.textContent = innerWidth >= 1700 ? '50%' : '';
+          addEventListener('resize', render); render();
+        }''')
+        sample = await self.scraper.day_energy(self.browser.page, self.day)
+        self.assertEqual(sample.values['grid_import_energy'], 5)
+        self.assertEqual(sample.values['self_consumption_energy'], 5)
+        self.assertEqual(self.browser.page.viewport_size['width'], 1920)
+
+    async def test_wider_layout_never_invents_a_still_missing_import(self):
+        await self.fixture()
+        await self.browser.page.locator('[data-tip="Vom Netz: 5 kWh"]').evaluate('el => el.remove()')
+        with self.assertRaises(ParseError) as caught:
+            await self.scraper.day_energy(self.browser.page, self.day)
+        self.assertEqual(failure_details(caught.exception)['missing_fields'], ['grid_import_energy'])
+        self.assertEqual(self.browser.page.viewport_size['width'], 1920)
+
+    async def test_css_hidden_import_label_is_read_after_responsive_resize(self):
+        await self.fixture()
+        await self.browser.page.add_style_tag(content='@media (max-width: 1700px) { [data-tip="Vom Netz: 5 kWh"] { display: none; } }')
+        sample = await self.scraper.day_energy(self.browser.page, self.day)
+        self.assertEqual(sample.values['grid_import_energy'], 5)
+        self.assertEqual(self.browser.page.viewport_size['width'], 1920)
+
+    async def test_unknown_import_label_is_reported_without_resizing(self):
+        await self.fixture()
+        await self.browser.page.locator('[data-tip="Vom Netz: 5 kWh"]').evaluate('el => el.dataset.tip="Unrecognized component: 5 kWh"')
+        with self.assertRaises(ParseError) as caught:
+            await self.scraper.day_energy(self.browser.page, self.day)
+        details = failure_details(caught.exception)
+        self.assertEqual(details['missing_fields'], ['grid_import_energy'])
+        self.assertEqual(details['distribution_label_count'], 2)
+        self.assertEqual(details['unrecognized_tooltip_count'], 1)
+        self.assertEqual(self.browser.page.viewport_size['width'], 1440)
+
     async def test_consumption_reuses_explicit_production_self_use_when_pv_label_is_absent(self):
         await self.fixture()
         await self.browser.page.locator('[data-tip="Aus PV-Energie: 5 kWh"]').evaluate('el => el.remove()')

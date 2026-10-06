@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.11
+
+- Bei fehlenden Verteilungslabels wird dieselbe Tagesansicht einmal auf 1920 Pixel verbreitert und vollständig erneut ausgelesen. Dadurch können in schmalen Balken ausgeblendete Prozentlabels und ihre echten Energie-Tooltips zugänglich werden. Es gibt keine zusätzliche Navigation und keine Berechnung fehlender Netzwerte aus Prozentanteilen.
+- Nur sichtbare Prozentlabels werden zum Hover verwendet. Nicht erkannte Tooltiptexte, falsche Datumsbereiche und widersprüchliche Energiebilanzen lösen keine Layout-Wiederholung aus. Auch nach der breiteren Wiederholung fehlende Mengen bleiben Fehler.
+- Die Fehlerdiagnose nennt zusätzlich `distribution_label_count` und `unrecognized_tooltip_count`, um fehlende Beschriftungen von nicht erkannten Texten zu unterscheiden. Deutsch und Englisch werden weiterhin gleichzeitig erkannt.
+- Die Nutzerlogs aus 0.3.10 belegen fehlenden Netzbezug; die Ursache auf dem Gerät ist noch nicht bestätigt. Ein schmaler Browser gegenüber dem bereitgestellten Screenshot ist eine plausible Layoutursache, die mit lokalen responsiven Browser-Testseiten reproduziert wurde.
+
 ## 0.3.10
 
 - Deutsche und englische Energie-Beschriftungen werden parallel erkannt; geschützte Leerzeichen, Unicode-Zeichenformen und Bindestrichvarianten werden für den Labelvergleich vereinheitlicht. Messwerte werden weiterhin aus den ursprünglichen Tooltip-Texten gelesen.

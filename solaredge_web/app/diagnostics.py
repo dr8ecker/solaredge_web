@@ -63,6 +63,9 @@ def failure_details(error):
             missing = sorted(set(error.missing_fields) & ParseError.FIELDS)
             if missing:
                 result['missing_fields'] = missing
+            if error.label_count is not None:
+                result['distribution_label_count'] = error.label_count
+                result['unrecognized_tooltip_count'] = error.unrecognized_tooltip_count
         else:
             for field in SELECTORS:
                 if message == f'Selector missing or ambiguous: {field}; run mode=discovery':

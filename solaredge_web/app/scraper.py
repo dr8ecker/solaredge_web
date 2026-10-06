@@ -3,6 +3,7 @@
 
 import re
 import unicodedata
+import logging
 from datetime import date, datetime, timezone
 from decimal import Decimal
 from zoneinfo import ZoneInfo
@@ -11,6 +12,8 @@ from .discovery import KEYWORDS
 from .models import DayEnergy, ScrapeResult
 from .parser import ValueParser, ParseError
 from .selectors import unique
+
+LOGGER = logging.getLogger(__name__)
 
 
 class SolarEdgeScraper:
@@ -106,6 +109,26 @@ class SolarEdgeScraper:
             raise ValueError("Historical period did not match requested day")
 
     async def day_energy(self, page, expected: date) -> DayEnergy:
+        try:
+            return await self._day_energy(page, expected)
+        except ParseError as error:
+            viewport = page.viewport_size
+            if (error.reason not in {'distribution_energy_incomplete', 'distribution_labels_missing'}
+                    or error.field not in {'production_card', 'consumption_card'}
+                    or error.unrecognized_tooltip_count != 0
+                    or not viewport or viewport['width'] >= 1920):
+                raise
+            # Responsive bars can omit percent text in small slices. Re-render
+            # the same date once, then read real tooltips with all checks intact.
+            LOGGER.warning('Energy distribution labels incomplete in %s; widening browser to 1920 px for one tooltip retry', error.field)
+            await page.mouse.move(0, 0)
+            await page.get_by_role('tooltip').wait_for(state='hidden', timeout=5000)
+            await page.set_viewport_size({**viewport, 'width': 1920})
+            await page.evaluate('() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))')
+            await self.wait_energy(page)
+            return await self._day_energy(page, expected)
+
+    async def _day_energy(self, page, expected: date) -> DayEnergy:
         if await self.selected_dates(page) != (expected, expected):
             raise ValueError("Refusing overlapping or wrong energy period")
         quantities = {}
@@ -132,11 +155,12 @@ class SolarEdgeScraper:
                 for key in allowed:
                     quantities.setdefault(key, total)
                 continue
-            labels = card.get_by_text(re.compile(r'^\d+(?:[.,]\d+)?\s*%$'))
-            if await labels.count() == 0:
-                raise ParseError("Distribution labels missing; no zero assumed", field=card_name)
+            labels = card.get_by_text(re.compile(r'^\d+(?:[.,]\d+)?\s*%$')).filter(visible=True)
+            label_count = await labels.count()
+            if label_count == 0:
+                raise ParseError("Distribution labels missing; no zero assumed", field=card_name, label_count=0)
             parts = {}
-            unrecognized_tooltip = False
+            unrecognized_tooltip_count = 0
             for label in await labels.all():
                 # Dismiss the previous tooltip even when both portions say 50%.
                 await page.mouse.move(0, 0)
@@ -161,17 +185,18 @@ class SolarEdgeScraper:
                 if key:
                     parts[key] = ValueParser.parse(text, 'kWh', field=key)
                 else:
-                    unrecognized_tooltip = True
+                    unrecognized_tooltip_count += 1
             # Self-use is the same energy in both cards. Reuse the explicit
             # production quantity, including its resolution, if the second
             # label is absent. Unknown tooltips remain errors. Require an import
             # and a matching consumption total; never derive it from percent.
             for key in allowed - parts.keys():
-                if key == 'self_consumption_energy' and key in quantities and not unrecognized_tooltip:
+                if key == 'self_consumption_energy' and key in quantities and not unrecognized_tooltip_count:
                     parts[key] = quantities[key]
             if not allowed <= parts.keys():
                 raise ParseError("Distribution energy incomplete; run discovery", field=card_name,
-                                 missing_fields=allowed - parts.keys())
+                                 missing_fields=allowed - parts.keys(), label_count=label_count,
+                                 unrecognized_tooltip_count=unrecognized_tooltip_count)
             difference = abs(sum(q.value for q in parts.values()) - total.value)
             tolerance = total.resolution + sum(q.resolution for q in parts.values())
             if difference > tolerance:

@@ -39,7 +39,7 @@ Die Messwerte erscheinen nach Abschluss des jeweiligen Abrufs. Auch nach Mittern
 
 ## Stand
 
-**0.3.10** unterstützt deutsche und englische Energie-Beschriftungen gleichzeitig, einschließlich typografischer Leerzeichen und Bindestriche. Ein fehlendes PV-Verbrauchslabel kann durch den ausdrücklich gelesenen Eigenverbrauch aus der Produktionskarte ergänzt werden, wenn Netzbezug und Verbrauchssumme dazu passen. Unvollständige Verteilungen nennen das fehlende Energiefeld im Log. Die genaue Ursache des verbleibenden Gerätefehlers ist noch nicht bestätigt.
+**0.3.11** wiederholt das Auslesen fehlender Energie-Beschriftungen einmal in einer breiteren Browseransicht. Deutsch und Englisch werden gleichzeitig erkannt. Netzbezug wird weiterhin ausdrücklich aus seinem Tooltip gelesen; auch nach der Wiederholung fehlende Mengen bleiben Fehler. Diagnoseangaben unterscheiden fehlende Labels von unbekannten Tooltiptexten. Die Bestätigung auf dem Nutzergerät steht noch aus.
 
 Login, Session, echte Tageswerte, Datumwechsel, MQTT und Energie-Dashboard wurden für frühere Versionen in AMD64-Containern mit separatem Home Assistant geprüft. Der Nutzer hat auf seinem x86-64-Home-Assistant erfolgreiche MQTT-Verbindung, Chromium-Start, Login und einen vollständigen Abruf mit gespeichertem Energie-Ledger bestätigt. ARM64 lässt sich bauen; ein nativer ARM64-Lauf und mehrtägiger Dauerbetrieb sind noch nicht bestätigt. Die Tageswerte und der Historienimport wurden für 0.3.0 zusätzlich mit echtem SolarEdge-Abruf und einer getrennten HA-Testinstanz geprüft. Einzelne Prüfergebnisse und ihr Versionsstand stehen in [VALIDATION.md](solaredge_web/VALIDATION.md).
 

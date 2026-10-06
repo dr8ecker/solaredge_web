@@ -102,6 +102,12 @@ Die Gegenrichtung wird nur bei genau einem eindeutig beschrifteten, gültigen po
 - Fünf neue Browser-Tests prüfen die Screenshot-Mengen, den übernommenen ausdrücklich gelesenen PV-Eigenverbrauch bei fehlendem zweitem Label, unverändert abgewiesene widersprüchliche Verbrauchssummen und unbekannte Tooltips sowie deutsche/englische Labels mit geschützten Leerzeichen und Bindestrichvarianten. Der Test mit fehlendem positivem PV-Verbrauchslabel scheitert zunächst gegen 0.3.9 und besteht mit der Korrektur. Der Typografietest verwendet absichtlich widersprüchliche Tooltip-Mengen und prüft deren Ablehnung, damit ein unerkanntes Label nicht durch einen Ersatzwert verdeckt werden kann.
 - Unter Windows mit Playwright und lokalem Chromium 107 Tests ausgeführt: 105 bestanden, zwei Prüfungen für separate MQTT- und Home-Assistant-Testdienste übersprungen. Fehlende Felder erscheinen ausschließlich als feste Feldnamen in der Diagnose. Die Bestätigung auf dem Nutzergerät steht noch aus.
 
+## Ergänzungen in 0.3.11
+
+- Die neuen Nutzerlogs nennen `missing_fields: ['grid_import_energy']`. Die Tooltip-Screenshots zeigen zuvor vorhandenen Netzbezug mit `Vom Netz: 2.5 kWh`. Die Sprache allein erklärt den aktuellen Fehler nicht. Die Standardansicht des Add-on-Browsers ist 1440 Pixel breit, der bereitgestellte vollständige Dashboard-Screenshot etwa 1770 Pixel. Eine responsive Unterdrückung der schmalen Prozentbeschriftung ist damit eine plausible, noch nicht auf dem Gerät bestätigte Ursache.
+- Vier neue Browser-Tests prüfen einen bei 1440 Pixel ausgelassenen Importtext mit erfolgreichem echten Tooltip-Lesen bei 1920 Pixel, per CSS versteckte Labels, weiterhin fehlenden Import nach der einmaligen Erweiterung sowie nicht erkannte Importtexte ohne Erweiterung. Der Test mit responsiv ausgelassenem Label reproduziert gegen 0.3.10 `distribution_energy_incomplete` mit fehlendem Netzbezug und besteht mit der Korrektur. Die synthetischen Testseiten sind kein Beleg für die private SolarEdge-DOM-Struktur.
+- Unter Windows mit Playwright und lokalem Chromium 111 Tests ausgeführt: 109 bestanden, zwei Prüfungen für separate MQTT- und Home-Assistant-Testdienste übersprungen. Nach Ergänzung der Tooltip-Schließprüfung bestehen die zwei Layout-Wiederholungstests erneut. Die Gerätebestätigung steht noch aus.
+
 ---
 
 © 2026 [8ecker.de](https://8ecker.de)

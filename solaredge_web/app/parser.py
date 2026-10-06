@@ -29,11 +29,14 @@ class ParseError(ValueError):
     FIELDS = {'production_card', 'consumption_card', 'production_kpi',
               'grid_export_energy', 'grid_import_energy', 'self_consumption_energy'}
 
-    def __init__(self, message, *, field=None, missing_fields=()):
+    def __init__(self, message, *, field=None, missing_fields=(), label_count=None, unrecognized_tooltip_count=0):
         super().__init__(message)
         self.reason = self.REASONS.get(message, 'unknown_validation')
         self.field = field if field in self.FIELDS else None
         self.missing_fields = tuple(sorted(set(missing_fields) & self.FIELDS))
+        self.label_count = label_count if type(label_count) is int and 0 <= label_count <= 100 else None
+        self.unrecognized_tooltip_count = (unrecognized_tooltip_count
+                                          if type(unrecognized_tooltip_count) is int and 0 <= unrecognized_tooltip_count <= 100 else None)
 
 
 @dataclass(frozen=True)
