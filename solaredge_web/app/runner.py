@@ -8,6 +8,7 @@ import time
 import os
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
+from playwright.async_api import TimeoutError as BrowserTimeoutError
 
 from .browser import BrowserManager, RateLimited
 from .discovery import SolarEdgeDiscovery
@@ -15,7 +16,7 @@ from .energy import EnergyLedger, LedgerError, daily_values
 from .statistics import StatisticsImporter, StatisticsError
 from .files import write_private_json
 from .health import HealthManager
-from .login import SolarEdgeLogin, ManualLoginRequired, AuthenticationError
+from .login import SolarEdgeLogin, ManualLoginRequired, AuthenticationError, TermsConfirmationRequired, check_challenge
 from .mqtt import MqttPublisher
 from .navigator import SolarEdgeNavigator
 from .scraper import SolarEdgeScraper
@@ -54,7 +55,7 @@ async def run_normal(config, *, once=False):
                 publisher.publish_availability()
             await wait_or_stop(stop, 10, health)
 
-    async def cycle():
+    async def cycle_work():
         if not browser.usable:
             await browser.close()
             await browser.start()
@@ -115,6 +116,21 @@ async def run_normal(config, *, once=False):
         if config.debug:
             await SolarEdgeDiscovery(config).collect(page)
         return values
+
+    async def cycle():
+        try:
+            return await cycle_work()
+        except (BrowserTimeoutError, ValueError):
+            # A dialog may arrive while navigation or a hover is waiting. Report
+            # the human action instead of treating it as another load failure.
+            if browser.usable:
+                try:
+                    await check_challenge(browser.page)
+                except ManualLoginRequired:
+                    raise
+                except Exception:
+                    pass
+            raise
 
     task_heartbeat = asyncio.create_task(heartbeat())
     try:
@@ -186,12 +202,16 @@ async def run_normal(config, *, once=False):
                 await browser.idle()
                 await wait_or_stop(stop, max(1800, config.poll_interval), health)
             except (ManualLoginRequired, AuthenticationError, LedgerError) as error:
-                status = 'manual_login_required' if isinstance(error, ManualLoginRequired) else 'login_required' if isinstance(error, AuthenticationError) else 'energy_ledger_error'
+                status = ('terms_confirmation_required' if isinstance(error, TermsConfirmationRequired)
+                          else 'manual_login_required' if isinstance(error, ManualLoginRequired)
+                          else 'login_required' if isinstance(error, AuthenticationError) else 'energy_ledger_error')
                 LOGGER.error('%s', str(error))
                 health.update(status=status, consecutive_failures=config.max_retries)
                 if publisher:
                     publisher.update({'scraper_status':status})
                     publisher.unavailable()
+                if isinstance(error, TermsConfirmationRequired):
+                    await browser.idle()
                 if once:
                     return 3
                 if isinstance(error, LedgerError) or isinstance(error, ManualLoginRequired):

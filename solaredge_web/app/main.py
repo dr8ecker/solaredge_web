@@ -87,7 +87,8 @@ async def run(config: Config, *, once: bool = False) -> int:
                     break
                 failures = 0
                 challenge = result["signals"]["manual_challenge_visible"]
-                status = "manual_login_required" if challenge else "page_loaded"
+                terms = result['signals'].get('terms_confirmation_visible', False)
+                status = 'terms_confirmation_required' if terms else "manual_login_required" if challenge else "page_loaded"
                 write_private_json(config.data_dir / "smoke_report.json", {
                     "mode": "smoke_test", "attempted_at": attempt,
                     "status": status, **result,
@@ -99,8 +100,11 @@ async def run(config: Config, *, once: bool = False) -> int:
                 LOGGER.info("Monitoring page loaded; no dashboard values have been read")
                 if config.debug:
                     LOGGER.debug("Page signals: %s", result["signals"])
-                if challenge:
-                    LOGGER.warning("Manual security check detected; automatic page reloads paused")
+                if challenge or terms:
+                    LOGGER.warning('SolarEdge terms confirmation required; review in your browser and restart the add-on. Automatic page reloads paused' if terms
+                                   else "Manual security check detected; automatic page reloads paused")
+                    if terms:
+                        await browser.idle()
                     if once:
                         return 3
                     while not stop.is_set():

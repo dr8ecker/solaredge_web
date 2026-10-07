@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.12
+
+- Fehlende Energieanteile können aus dem Tooltip eines Balkensegments gelesen werden, auch wenn das Prozentlabel dauerhaft fehlt. Die Suche bleibt in der jeweiligen Energiekarte und verwendet nur ein eindeutig zugeordnetes benachbartes Balkenpaar. Richtung und kWh-Menge stammen ausschließlich aus dem frischen Tooltip; Farben und Prozentanteile liefern keine Energie- oder Richtungswerte.
+- Sichtbare Aufforderungen zur Bestätigung aktualisierter SolarEdge-Nutzungsbedingungen werden auf Deutsch und Englisch erkannt. Der Status `terms_confirmation_required` fordert zur persönlichen Prüfung und Bestätigung bei Zustimmung auf. Das Add-on akzeptiert nichts automatisch, entlädt die Seite und pausiert bis zum Neustart.
+- Die bewusste Bedingungen-Pause gilt bei lebendigem Prozess, Heartbeat, Browser und MQTT nicht als Scraper-Ausfall für den Healthcheck. Dashboard-Vorlage und Ausfall-Blueprint zeigen den neuen Status an.
+- Zehn neue Tests prüfen Balken ohne Prozenttext, uneindeutige Balkenpaare, unbekannte/alte Tooltips und fehlerhafte Mengen sowie Bedingungen-Prompts, ausgeblendete Dialoge, späte Dialoge und die Healthcheck-Pause. Die Live-Bestätigung auf dem Nutzergerät steht aus.
+
 ## 0.3.11
 
 - Bei fehlenden Verteilungslabels wird dieselbe Tagesansicht einmal auf 1920 Pixel verbreitert und vollständig erneut ausgelesen. Dadurch können in schmalen Balken ausgeblendete Prozentlabels und ihre echten Energie-Tooltips zugänglich werden. Es gibt keine zusätzliche Navigation und keine Berechnung fehlender Netzwerte aus Prozentanteilen.

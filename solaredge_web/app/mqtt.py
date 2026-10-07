@@ -54,7 +54,7 @@ SENSORS = {
 DIAGNOSTIC = {k for k in SENSORS if k.startswith(('scraper_', 'history_'))} | {'energy_gap_count', 'data_freshness', 'energy_date'}
 DAILY = {k for k in SENSORS if k.endswith('_today')}
 FRESHNESS_OPTIONS = ['waiting', 'fresh', 'updating', 'retrying', 'stale', 'error',
-                     'login_required', 'manual_login_required', 'energy_ledger_error',
+                     'login_required', 'manual_login_required', 'terms_confirmation_required', 'energy_ledger_error',
                      'rate_limited', 'offline']
 
 
@@ -187,7 +187,7 @@ class MqttPublisher:
     def freshness(self, now=None):
         now = time.time() if now is None else now
         status = self.cache.get('scraper_status', '')
-        if status in {'login_required', 'manual_login_required', 'energy_ledger_error', 'rate_limited', 'offline'}:
+        if status in {'login_required', 'manual_login_required', 'terms_confirmation_required', 'energy_ledger_error', 'rate_limited', 'offline'}:
             return status
         if now - (self.last_success or self.created_at) > self.config.health_max_age:
             return 'stale'

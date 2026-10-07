@@ -11,6 +11,7 @@ from playwright.async_api import async_playwright
 
 from .config import Config, ConfigurationError
 from .diagnostics import failure_details
+from .ui_prompts import TERMS_VISIBLE
 
 LOGGER = logging.getLogger(__name__)
 
@@ -112,8 +113,8 @@ class BrowserManager:
         # Unknown pages fail the test instead of being reported as a ready UI.
         self.stage = 'monitoring_ui_wait'
         await self.page.wait_for_function(
-            """() => document.body &&
-                /SolarEdge|Willkommen bei Monitoring|Welcome to Monitoring|Anmelden|Sign in|Log in|Anlagen|Sites|Dashboard|verify you are human|bestätigen.{0,30}Mensch|enter.{0,20}verification code|Bestätigungscode eingeben|security check|Sicherheitsüberprüfung/i.test(document.body.innerText)""",
+            """() => (TERMS_FUNCTION)() || (document.body &&
+                /SolarEdge|Willkommen bei Monitoring|Welcome to Monitoring|Anmelden|Sign in|Log in|Anlagen|Sites|Dashboard|verify you are human|bestätigen.{0,30}Mensch|enter.{0,20}verification code|Bestätigungscode eingeben|security check|Sicherheitsüberprüfung/i.test(document.body.innerText))""".replace('TERMS_FUNCTION', TERMS_VISIBLE),
             timeout=self.config.page_timeout,
         )
         signals = await self.page.evaluate("""() => {
@@ -123,9 +124,10 @@ class BrowserManager:
                 welcome_visible: /Willkommen bei Monitoring|Welcome to Monitoring/i.test(text),
                 login_text_visible: /Anmelden|Sign in|Log in/i.test(text),
                 plants_text_visible: /Anlagen|Sites/i.test(text),
-                manual_challenge_visible: /verify you are human|bestätigen.{0,30}Mensch|enter.{0,20}verification code|Bestätigungscode eingeben|security check|Sicherheitsüberprüfung/i.test(text)
+                manual_challenge_visible: /verify you are human|bestätigen.{0,30}Mensch|enter.{0,20}verification code|Bestätigungscode eingeben|security check|Sicherheitsüberprüfung/i.test(text),
+                terms_confirmation_visible: (TERMS_FUNCTION)()
             };
-        }""")
+        }""".replace('TERMS_FUNCTION', TERMS_VISIBLE))
         # Only the origin is returned. Never record a redirect path, query,
         # title, HTML, cookies or raw visible text in this early test mode.
         destination = urlsplit(self.page.url)

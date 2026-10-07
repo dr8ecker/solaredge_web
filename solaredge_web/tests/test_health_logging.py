@@ -52,3 +52,15 @@ class HealthLoggingTests(unittest.TestCase):
     def test_backoff_is_bounded(self):
         self.assertEqual([retry_delay(n) for n in range(1, 6)], [10, 30, 60, 120, 300])
         self.assertEqual(retry_delay(100), 300)
+
+    def test_terms_pause_does_not_require_a_scrape_success_but_requires_liveness(self):
+        with tempfile.TemporaryDirectory() as directory:
+            manager = HealthManager(Config(data_dir=Path(directory)))
+            moment = time.time()
+            manager.update(started_at=moment-3600, status='terms_confirmation_required',
+                           browser_connected=True, mqtt_connected=True)
+            self.assertTrue(healthy(manager.path, now=moment+1))
+            manager.update(browser_connected=False)
+            self.assertFalse(healthy(manager.path, now=moment+1))
+            manager.update(browser_connected=True)
+            self.assertFalse(healthy(manager.path, now=moment+301))

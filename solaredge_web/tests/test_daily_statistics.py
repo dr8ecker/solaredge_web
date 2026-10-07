@@ -57,8 +57,9 @@ class FreshnessTests(unittest.TestCase):
 
     def test_login_attention_is_not_hidden_by_old_success(self):
         p = MqttPublisher(Config())
-        p.update({'scraper_status': 'manual_login_required'})
-        self.assertEqual(p.freshness(p.created_at + 10000), 'manual_login_required')
+        for status in ('manual_login_required', 'terms_confirmation_required'):
+            p.update({'scraper_status': status})
+            self.assertEqual(p.freshness(p.created_at + 10000), status)
 
     def test_daily_values_expire_at_local_midnight_without_publishing_zero(self):
         p = MqttPublisher(Config())

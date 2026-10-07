@@ -66,6 +66,9 @@ def failure_details(error):
             if error.label_count is not None:
                 result['distribution_label_count'] = error.label_count
                 result['unrecognized_tooltip_count'] = error.unrecognized_tooltip_count
+            if error.bar_hover_candidate_count is not None:
+                result['bar_hover_candidate_count'] = error.bar_hover_candidate_count
+                result['bar_tooltip_fields'] = list(error.bar_tooltip_fields)
         else:
             for field in SELECTORS:
                 if message == f'Selector missing or ambiguous: {field}; run mode=discovery':

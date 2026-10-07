@@ -7,6 +7,7 @@ import logging
 from datetime import date, datetime, timezone
 from decimal import Decimal
 from zoneinfo import ZoneInfo
+from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 
 from .discovery import KEYWORDS
 from .models import DayEnergy, ScrapeResult
@@ -14,6 +15,42 @@ from .parser import ValueParser, ParseError
 from .selectors import unique
 
 LOGGER = logging.getLogger(__name__)
+
+# Discover a unique adjacent pair in the verified card scope. Color identifies
+# rendered rectangles only; direction and quantity always come from a tooltip.
+UNLABELLED_BAR_POSITIONS = r"""scope => {
+  const visible = el => el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden';
+  const all = Array.from(scope.querySelectorAll('*')).slice(0, 300);
+  const labels = all.filter(el => visible(el) && /^\d+(?:[.,]\d+)?\s*%$/.test(el.innerText?.trim() || ''));
+  const bounds = scope.getBoundingClientRect();
+  const boxes = [], seen = new Set();
+  for (const node of all) {
+    if (!(node instanceof HTMLElement) || !visible(node) || node.closest('[role=tooltip]')) continue;
+    const style = getComputedStyle(node), r = node.getBoundingClientRect();
+    const color = style.backgroundColor;
+    if (style.opacity === '0' || color === 'transparent' || color === 'rgba(0, 0, 0, 0)' ||
+        r.width < 2 || r.height < 8 || r.height > 48 || r.left < bounds.left - 1 ||
+        r.right > bounds.right + 1 || r.top < bounds.top - 1 || r.bottom > bounds.bottom + 1) continue;
+    const signature = [r.x, r.y, r.width, r.height].map(x => x.toFixed(2)).join(',') + color;
+    if (seen.has(signature)) continue;
+    seen.add(signature);
+    boxes.push({node, r, color, labelled: labels.some(label => node.contains(label))});
+  }
+  const pairs = [];
+  for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+    const a = boxes[i], b = boxes[j];
+    if (a.color === b.color || a.labelled === b.labelled ||
+        Math.abs(a.r.top - b.r.top) > 2 || Math.abs(a.r.height - b.r.height) > 2) continue;
+    const [left, right] = a.r.left < b.r.left ? [a, b] : [b, a];
+    const gap = right.r.left - left.r.right;
+    if (gap < -1 || gap > 3) continue;
+    pairs.push(a.labelled ? b : a);
+  }
+  if (pairs.length !== 1) return [];
+  const target = pairs[0], x = target.r.left + target.r.width / 2, y = target.r.top + target.r.height / 2;
+  const hit = document.elementFromPoint(x, y);
+  return hit && target.node.contains(hit) ? [{x, y}] : [];
+}"""
 
 
 class SolarEdgeScraper:
@@ -26,6 +63,46 @@ class SolarEdgeScraper:
         text = unicodedata.normalize('NFKC', text)
         text = re.sub(r'[-\u2010-\u2015\u2212]', ' ', text)
         return ' '.join(text.split()).casefold()
+
+    def energy_key(self, text, allowed):
+        normalized = self.normalize_label(text)
+        for name, words in (
+            ('grid_export_energy', KEYWORDS['grid_export']),
+            ('grid_import_energy', KEYWORDS['grid_import']),
+            ('self_consumption_energy', KEYWORDS['pv_to_home']),
+        ):
+            if name in allowed and any(self.normalize_label(word) in normalized for word in words):
+                return name
+        return None
+
+    async def unlabelled_bar_energy(self, page, card, card_name, allowed, missing):
+        await page.mouse.move(0, 0)
+        await page.get_by_role('tooltip').wait_for(state='hidden', timeout=5000)
+        positions = await card.evaluate(UNLABELLED_BAR_POSITIONS)
+        parts, fields, unknown = {}, [], 0
+        for position in positions:
+            prior = await page.locator('[role=tooltip]').all_text_contents()
+            await page.mouse.move(position['x'], position['y'])
+            try:
+                await page.wait_for_function(r"""prior => Array.from(document.querySelectorAll('[role=tooltip]')).some(el => {
+                  const text = el.innerText.trim();
+                  return el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden' &&
+                    !prior.some(old => old.trim() === text) && /\d[.,\d\s]*\s*(?:kWh|MWh|Wh)(?!\/)/i.test(text);
+                })""", arg=prior, timeout=5000)
+            except PlaywrightTimeoutError:
+                continue
+            tooltip = page.get_by_role('tooltip')
+            if await tooltip.count() != 1:
+                raise ParseError('Tooltip is ambiguous', field=card_name)
+            text = await tooltip.inner_text()
+            key = self.energy_key(text, allowed)
+            if key is None:
+                unknown += 1
+            else:
+                fields.append(key)
+                if key in missing:
+                    parts[key] = ValueParser.parse(text, 'kWh', field=key)
+        return parts, len(positions), unknown, fields
 
     @staticmethod
     def grid_power(text):
@@ -172,16 +249,7 @@ class SolarEdgeScraper:
                 if await tooltip.count() != 1:
                     raise ParseError("Tooltip is ambiguous", field=card_name)
                 text = await tooltip.inner_text()
-                normalized = self.normalize_label(text)
-                key = None
-                for name, words in (
-                    ('grid_export_energy', KEYWORDS['grid_export']),
-                    ('grid_import_energy', KEYWORDS['grid_import']),
-                    ('self_consumption_energy', KEYWORDS['pv_to_home']),
-                ):
-                    if name in allowed and any(self.normalize_label(word) in normalized for word in words):
-                        key = name
-                        break
+                key = self.energy_key(text, allowed)
                 if key:
                     parts[key] = ValueParser.parse(text, 'kWh', field=key)
                 else:
@@ -193,10 +261,19 @@ class SolarEdgeScraper:
             for key in allowed - parts.keys():
                 if key == 'self_consumption_energy' and key in quantities and not unrecognized_tooltip_count:
                     parts[key] = quantities[key]
+            bar_candidate_count, bar_fields = None, []
+            if not allowed <= parts.keys() and not unrecognized_tooltip_count:
+                bar_parts, bar_candidate_count, bar_unknown, bar_fields = await self.unlabelled_bar_energy(
+                    page, card, card_name, allowed, allowed - parts.keys())
+                parts.update(bar_parts)
+                unrecognized_tooltip_count += bar_unknown
+                if bar_parts:
+                    LOGGER.info('Energy tooltip read from an unlabelled bar in %s: %s', card_name, ', '.join(sorted(bar_parts)))
             if not allowed <= parts.keys():
                 raise ParseError("Distribution energy incomplete; run discovery", field=card_name,
                                  missing_fields=allowed - parts.keys(), label_count=label_count,
-                                 unrecognized_tooltip_count=unrecognized_tooltip_count)
+                                 unrecognized_tooltip_count=unrecognized_tooltip_count,
+                                 bar_hover_candidate_count=bar_candidate_count, bar_tooltip_fields=bar_fields)
             difference = abs(sum(q.value for q in parts.values()) - total.value)
             tolerance = total.resolution + sum(q.resolution for q in parts.values())
             if difference > tolerance:

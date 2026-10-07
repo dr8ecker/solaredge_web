@@ -122,6 +122,78 @@ class ScraperBrowserTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(sample.values['self_consumption_energy'], 5)
         self.assertEqual(self.browser.page.viewport_size['width'], 1920)
 
+    async def unlabelled_import_bar(self, *, tooltip='Vom Netz: 2.6 kWh', show_tooltip=True):
+        await self.fixture(production='58.7', consumption='6.5')
+        await self.browser.page.evaluate('''({tip, show}) => {
+          const production = document.querySelectorAll('#distribution-component-produktion [data-tip]');
+          production[0].textContent='93%'; production[0].dataset.tip='Ins Netz: 54.8 kWh';
+          production[1].textContent='7%'; production[1].dataset.tip='Ins Gebäude: 3.9 kWh';
+          const card = document.querySelector('#distribution-component-verbrauch');
+          const portions = Array.from(card.querySelectorAll('[data-tip]'));
+          const bar = document.createElement('div');
+          bar.style.cssText='display:flex;width:90px;height:28px';
+          portions[0].textContent=''; portions[0].dataset.tip=tip;
+          portions[0].style.cssText='display:block;width:36px;height:28px;background-color:rgb(255, 170, 80)';
+          portions[1].textContent='60%'; portions[1].dataset.tip='Aus PV-Energie: 3.9 kWh';
+          portions[1].style.cssText='display:block;width:54px;height:28px;background-color:rgb(130, 175, 250)';
+          portions.forEach(el => bar.append(el)); card.append(bar);
+          portions[0].onmouseenter=()=>{
+            if (!show) return;
+            const t=document.querySelector('[role=tooltip]');
+            t.textContent='40% '+tip; t.style.display='block';
+          };
+        }''', {'tip': tooltip, 'show': show_tooltip})
+
+    async def test_import_tooltip_is_read_from_unlabelled_bar_even_at_1920_pixels(self):
+        await self.unlabelled_import_bar()
+        await self.browser.page.set_viewport_size({'width': 1920, 'height': 1000})
+        sample = await self.scraper.day_energy(self.browser.page, self.day)
+        self.assertEqual(str(sample.values['grid_import_energy']), '2.6')
+        self.assertEqual(str(sample.values['self_consumption_energy']), '3.9')
+        self.assertEqual(str(sample.values['consumption_energy']), '6.5')
+
+    async def test_unknown_unlabelled_bar_tooltip_never_supplies_import(self):
+        await self.unlabelled_import_bar(tooltip='Unrecognized component: 2.6 kWh')
+        with self.assertRaises(ParseError) as caught:
+            await self.scraper.day_energy(self.browser.page, self.day)
+        details = failure_details(caught.exception)
+        self.assertEqual(details['missing_fields'], ['grid_import_energy'])
+        self.assertEqual(details['bar_hover_candidate_count'], 1)
+        self.assertEqual(details['unrecognized_tooltip_count'], 1)
+
+    async def test_missing_bar_tooltip_never_reuses_the_previous_pv_tooltip(self):
+        await self.unlabelled_import_bar(show_tooltip=False)
+        await self.browser.page.set_viewport_size({'width': 1920, 'height': 1000})
+        with self.assertRaises(ParseError) as caught:
+            await self.scraper.day_energy(self.browser.page, self.day)
+        details = failure_details(caught.exception)
+        self.assertEqual(details['missing_fields'], ['grid_import_energy'])
+        self.assertEqual(details['bar_hover_candidate_count'], 1)
+        self.assertEqual(details['bar_tooltip_fields'], [])
+
+    async def test_unlabelled_bar_with_mismatched_import_is_rejected(self):
+        await self.unlabelled_import_bar(tooltip='Vom Netz: 20 kWh')
+        with self.assertRaises(ParseError) as caught:
+            await self.scraper.day_energy(self.browser.page, self.day)
+        self.assertEqual(caught.exception.reason, 'distribution_total_mismatch')
+
+    async def test_multiple_unlabelled_bar_pairs_are_not_guessed(self):
+        await self.unlabelled_import_bar()
+        await self.browser.page.set_viewport_size({'width': 1920, 'height': 1000})
+        await self.browser.page.locator('#distribution-component-verbrauch > div').evaluate('''el => {
+          const copy=el.cloneNode(true);
+          for (const portion of copy.querySelectorAll('[data-tip]')) {
+            portion.onmouseenter=()=>{const t=document.querySelector('[role=tooltip]');t.textContent=portion.textContent+' '+portion.dataset.tip;t.style.display='block';};
+            portion.onmouseleave=()=>document.querySelector('[role=tooltip]').style.display='none';
+          }
+          el.parentElement.append(copy);
+        }''')
+        with self.assertRaises(ParseError) as caught:
+            await self.scraper.day_energy(self.browser.page, self.day)
+        details = failure_details(caught.exception)
+        self.assertEqual(details['missing_fields'], ['grid_import_energy'])
+        self.assertEqual(details['bar_hover_candidate_count'], 0)
+
     async def test_wider_layout_never_invents_a_still_missing_import(self):
         await self.fixture()
         await self.browser.page.locator('[data-tip="Vom Netz: 5 kWh"]').evaluate('el => el.remove()')

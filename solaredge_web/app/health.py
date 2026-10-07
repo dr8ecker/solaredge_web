@@ -74,6 +74,10 @@ def healthy(path: Path, *, now: float | None = None) -> bool:
         success = snapshot['last_scrape_success'] if snapshot.get('phase') == 'normal' else snapshot['last_page_success']
         if snapshot.get('phase') == 'normal' and snapshot['mqtt_connected'] is False and now - snapshot['started_at'] >= 300:
             return False
+        if snapshot['status'] == 'terms_confirmation_required':
+            # Expected human-action pause, not a hung scraper. Heartbeat, process,
+            # MQTT and browser liveness above/below still apply.
+            return bool(snapshot['browser_connected'])
         if success is None:
             return now - snapshot["started_at"] < 300
         if not snapshot["browser_connected"]:

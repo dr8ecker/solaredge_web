@@ -57,7 +57,7 @@ triggers:
   - trigger: template
     value_template: >-
       {{ states(freshness_entity) in ['stale', 'error', 'login_required',
-         'manual_login_required', 'energy_ledger_error', 'rate_limited',
+         'manual_login_required', 'terms_confirmation_required', 'energy_ledger_error', 'rate_limited',
          'offline', 'unavailable', 'unknown']
          or states(history_entity) in ['error', 'supervisor_required'] }}
     for:
@@ -70,6 +70,7 @@ actions:
     message: >-
       {% set labels = {'stale': 'Daten sind zu alt', 'error': 'Abruf fehlgeschlagen',
         'login_required': 'Anmeldung erforderlich', 'manual_login_required': 'Anmeldung manuell bestätigen',
+        'terms_confirmation_required': 'SolarEdge-Nutzungsbedingungen prüfen und bei Zustimmung selbst bestätigen',
         'energy_ledger_error': 'Energiezähler prüfen', 'rate_limited': 'SolarEdge begrenzt die Abrufe',
         'offline': 'Add-on offline', 'unavailable': 'Add-on oder MQTT nicht erreichbar',
         'unknown': 'Noch keine Daten', 'fresh': 'Daten aktuell', 'updating': 'Abruf läuft',

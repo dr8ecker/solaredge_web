@@ -35,6 +35,7 @@ async def main():
     for state, history, warning, recovered in [
         ('fresh','ok',False,True), ('updating','ok',False,False), ('retrying','ok',False,False),
         ('stale','ok',True,False), ('error','ok',True,False), ('manual_login_required','ok',True,False),
+        ('terms_confirmation_required','ok',True,False),
         ('unavailable','ok',True,False), ('fresh','error',True,False), ('fresh','disabled',False,True),
         ('fresh','supervisor_required',True,False),
     ]:
@@ -42,7 +43,7 @@ async def main():
         hass.states.async_set(values['history_entity'], history)
         assert trigger.async_render(values) == warning, (state, history)
         assert recovery.async_render(values) == recovered, (state, history)
-    print('Blueprint and device actions validated; warning/recovery templates passed 10 scenarios. No notifications sent.')
+    print('Blueprint and device actions validated; warning/recovery templates passed 11 scenarios. No notifications sent.')
 
 
 asyncio.run(main())

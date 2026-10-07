@@ -9,6 +9,7 @@ from urllib.parse import urlsplit
 from playwright.async_api import TimeoutError as BrowserTimeoutError
 
 from .files import write_private_json
+from .ui_prompts import TERMS_VISIBLE
 
 LOGGER = logging.getLogger(__name__)
 
@@ -30,6 +31,7 @@ SUBMIT_SELECTOR = 'button[type="submit" i], button:not([type]), input[type="subm
 # URLs, cookies or storage contents in login diagnostics.
 LOGIN_UI_STATE = r"""monitoringHost => {
     const isUsername = USERNAME_FUNCTION;
+    const termsVisible = TERMS_FUNCTION;
     const visible = el => {
         if (!el || getComputedStyle(el).visibility === 'hidden') return false;
         const rect = el.getBoundingClientRect();
@@ -60,15 +62,20 @@ LOGIN_UI_STATE = r"""monitoringHost => {
         session_indicator_visible: plants || dashboard,
         session_confirmed: location.hostname === monitoringHost && !password && (plants || dashboard),
         challenge_visible: challenge,
+        terms_confirmation_visible: termsVisible(),
         login_button_visible: Array.from(document.querySelectorAll('button,[role=button]')).some(el =>
             visible(el) && /^(Anmelden|Sign in|Log in)$/i.test((el.getAttribute('aria-label') || el.innerText || '').trim())),
         visible_input_count: inputs.length,
         visible_form_count: forms.filter(visible).length
     };
-}""".replace('USERNAME_FUNCTION', USERNAME_INPUT).replace('SUBMIT_BUTTONS', SUBMIT_SELECTOR)
+}""".replace('USERNAME_FUNCTION', USERNAME_INPUT).replace('SUBMIT_BUTTONS', SUBMIT_SELECTOR).replace('TERMS_FUNCTION', TERMS_VISIBLE)
 
 
 class ManualLoginRequired(RuntimeError):
+    pass
+
+
+class TermsConfirmationRequired(ManualLoginRequired):
     pass
 
 
@@ -78,6 +85,8 @@ class AuthenticationError(RuntimeError):
 
 async def check_challenge(page):
     # Read rendered UI only. A hidden reCAPTCHA script alone is not a challenge.
+    if await page.evaluate(TERMS_VISIBLE):
+        raise TermsConfirmationRequired('SolarEdge requires confirmation of updated terms. Review and accept them yourself in the SolarEdge portal if you agree, then restart the add-on. Automatic acceptance is disabled.')
     text = await page.locator('body').inner_text()
     if re.search(r'verify you are human|security check|Sicherheitsüberprüfung|captcha|verification code|Bestätigungscode|multi.factor|two.factor|Einmalpasswort', text, re.I):
         raise ManualLoginRequired("Manual security check; restart after resolving login")
@@ -111,7 +120,7 @@ class SolarEdgeLogin:
         try:
             await page.wait_for_function(
                 '({monitoringHost, allowEntry}) => { const state = (' + LOGIN_UI_STATE + ')(monitoringHost); '
-                'return state.session_confirmed || state.login_form_ready || state.challenge_visible || '
+                'return state.session_confirmed || state.login_form_ready || state.challenge_visible || state.terms_confirmation_visible || '
                 '(allowEntry && state.login_button_visible); }',
                 arg={'monitoringHost':urlsplit(self.config.monitoring_url).hostname, 'allowEntry':allow_entry},
                 polling=200)

@@ -67,7 +67,7 @@ card:
         }}'
       content: '{% set s = states(entity) %} {% set labels = {''fresh'': ''Daten aktuell'', ''updating'': ''Wird abgerufen'', ''waiting'':
         ''Warte auf Daten'', ''retrying'': ''Neuer Versuch'', ''stale'': ''Daten veraltet'', ''error'': ''Abruffehler'', ''login_required'':
-        ''Login erforderlich'', ''manual_login_required'': ''Login bestätigen'', ''mqtt_disconnected'': ''MQTT getrennt'', ''rate_limited'':
+        ''Login erforderlich'', ''manual_login_required'': ''Login bestätigen'', ''terms_confirmation_required'': ''Nutzungsbedingungen prüfen'', ''mqtt_disconnected'': ''MQTT getrennt'', ''rate_limited'':
         ''Abruf pausiert'', ''energy_ledger_error'': ''Zähler prüfen'', ''offline'': ''Offline'', ''unavailable'': ''Nicht verfügbar'',
         ''unknown'': ''Noch keine Daten''} %} {{ labels.get(s, ''Status prüfen'') }}'
       tap_action:
