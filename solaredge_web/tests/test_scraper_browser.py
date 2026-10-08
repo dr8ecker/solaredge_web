@@ -152,6 +152,71 @@ class ScraperBrowserTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(str(sample.values['self_consumption_energy']), '3.9')
         self.assertEqual(str(sample.values['consumption_energy']), '6.5')
 
+    async def all_bars_without_labels(self, *, language='de'):
+        await self.fixture()
+        await self.browser.page.evaluate('''language => {
+          const definitions = language === 'de' ? [
+            ['#distribution-component-produktion', ['Ins Netz: 5 kWh', 'Ins Gebäude: 5 kWh']],
+            ['#distribution-component-verbrauch', ['Vom Netz: 5 kWh', 'Aus PV-Energie: 5 kWh']]
+          ] : [
+            ['#distribution-component-produktion', ['To Grid: 5 kWh', 'To Building: 5 kWh']],
+            ['#distribution-component-verbrauch', ['From Grid: 5 kWh', 'From Solar: 5 kWh']]
+          ];
+          for (const [selector, tips] of definitions) {
+            const card=document.querySelector(selector), bar=document.createElement('div');
+            bar.style.cssText='display:flex;width:80px;height:28px';
+            Array.from(card.querySelectorAll('[data-tip]')).forEach((portion,i)=>{
+              portion.textContent=''; portion.dataset.tip=tips[i];
+              portion.style.cssText='display:block;width:40px;height:28px;background-color:'+(i===0?'rgb(255, 170, 80)':'rgb(130, 175, 250)');
+              portion.onmouseenter=()=>{const t=document.querySelector('[role=tooltip]');t.textContent=(i===0?'40% ':'60% ')+portion.dataset.tip;t.style.display='block';};
+              bar.append(portion);
+            });
+            card.append(bar);
+          }
+        }''', language)
+
+    async def test_production_and_consumption_without_any_percent_labels_read_both_tooltips(self):
+        for language in ('de', 'en'):
+            with self.subTest(language=language):
+                await self.all_bars_without_labels(language=language)
+                sample = await self.scraper.day_energy(self.browser.page, self.day)
+                self.assertEqual(sample.values, {'pv_energy': 10, 'consumption_energy': 10,
+                                               'grid_export_energy': 5, 'grid_import_energy': 5,
+                                               'self_consumption_energy': 5})
+
+    async def test_unlabelled_gradient_bars_read_explicit_tooltips(self):
+        await self.all_bars_without_labels()
+        await self.browser.page.locator('[data-tip]').evaluate_all('''els=>els.forEach((el,i)=>{
+          el.style.background=i%2===0?'linear-gradient(to right, rgb(40, 190, 200), rgb(110, 220, 220))':'linear-gradient(to right, rgb(50, 210, 140), rgb(100, 240, 180))';
+        })''')
+        sample = await self.scraper.day_energy(self.browser.page, self.day)
+        self.assertEqual(sample.values['grid_export_energy'], 5)
+        self.assertEqual(sample.values['grid_import_energy'], 5)
+
+    async def test_duplicate_directions_on_two_unlabelled_segments_are_rejected(self):
+        await self.all_bars_without_labels()
+        await self.browser.page.locator('#distribution-component-verbrauch [data-tip]').evaluate_all('els=>els.forEach(el=>el.dataset.tip="Vom Netz: 5 kWh")')
+        with self.assertRaises(ParseError):
+            await self.scraper.day_energy(self.browser.page, self.day)
+
+    async def test_newly_rendered_percent_labels_are_awaited_before_failure(self):
+        await self.fixture()
+        await self.browser.page.evaluate('''() => {
+          const labels=Array.from(document.querySelectorAll('#distribution-component-produktion [data-tip]'));
+          labels.forEach(el=>el.textContent='');
+          setTimeout(()=>labels.forEach(el=>el.textContent='50%'), 300);
+        }''')
+        sample = await self.scraper.day_energy(self.browser.page, self.day)
+        self.assertEqual(sample.values['grid_export_energy'], 5)
+        self.assertEqual(sample.values['self_consumption_energy'], 5)
+
+    async def test_unlabelled_consumption_self_use_is_checked_against_production(self):
+        await self.all_bars_without_labels()
+        await self.browser.page.locator('#distribution-component-verbrauch [data-tip]').last.evaluate('el=>el.dataset.tip="Aus PV-Energie: 15 kWh"')
+        with self.assertRaises(ParseError) as caught:
+            await self.scraper.day_energy(self.browser.page, self.day)
+        self.assertEqual(caught.exception.reason, 'distribution_total_mismatch')
+
     async def test_unknown_unlabelled_bar_tooltip_never_supplies_import(self):
         await self.unlabelled_import_bar(tooltip='Unrecognized component: 2.6 kWh')
         with self.assertRaises(ParseError) as caught:

@@ -116,6 +116,12 @@ Die Gegenrichtung wird nur bei genau einem eindeutig beschrifteten, gültigen po
 - Vier neue Browser-Tests prüfen englische/deutsche Bedingungen-Prompts ohne Checkbox-/Buttonaktion oder Loginübermittlung, ausgeblendete Dialoge und gewöhnliche Links, den Smoke-Modus ohne sichtbares SolarEdge-Branding sowie einen spät auftauchenden Dialog mit unterbrochenen Wiederholungen. Ein weiterer Healthcheck-Test prüft die erwartete menschliche Pause ohne erfolgreichen Erstabruf bei intaktem Browser/Heartbeat und ihre Ablehnung bei verlorener Liveness. MQTT-Datenzustand und Blueprint-Szenarien wurden um `terms_confirmation_required` ergänzt.
 - Unter Windows mit lokalem Chromium 121 Tests ausgeführt: 119 bestanden, zwei opt-in Prüfungen für separate MQTT-/Home-Assistant-Dienste übersprungen. Nach Ergänzung des Entladens während der Bedingungen-Pause bestehen die vier Prompt-Tests erneut. Die komplette Home-Assistant-Schemaprüfung mit elf Blueprint-Zustandskombinationen bleibt Teil der CI-Prüfung; es wurden keine Benachrichtigungen versendet. Die Bestätigung auf dem Nutzergerät steht aus.
 
+## Ergänzungen in 0.3.13
+
+- Die Nutzerlogs vom 08.10.2026 zeigen `distribution_labels_missing` in der Produktionskarte mit null Labels. Der 0.3.12-Code bricht in diesem Fall vor der neuen Balken-Auslesung ab. Ein neuer Test ohne jedes Prozentlabel in Produktions- und Verbrauchskarte reproduziert diesen Abbruch gegen 0.3.12 auf Deutsch und Englisch und besteht mit der Korrektur.
+- Fünf neue Browser-Tests prüfen zwei unbeschriftete Segmente, lineare Farbverläufe, doppelte Richtungen, verspätet erscheinende Labels sowie einen erneut gelesenen Verbrauchs-Eigenverbrauch, der der Bilanz widerspricht. Auch die beiden Tooltipwerte aus vollständig unbeschrifteten Verbrauchssegmenten werden geprüft; ein schon aus der Produktion bekannter Wert verdeckt keinen widersprüchlichen zweiten Tooltip.
+- Unter Windows mit lokalem Chromium 126 Tests ausgeführt: 124 bestanden, zwei opt-in Prüfungen für separate MQTT-/Home-Assistant-Dienste übersprungen. Die tatsächliche Portal-DOM-Struktur wurde weiterhin nicht erfasst; die neuen Balkenformen sind synthetische Fixtures. Die Gerätebestätigung steht aus.
+
 ---
 
 © 2026 [8ecker.de](https://8ecker.de)

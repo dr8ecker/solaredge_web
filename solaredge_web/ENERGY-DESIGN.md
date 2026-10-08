@@ -20,6 +20,8 @@ Ab 0.3.10 darf ein fehlendes PV-Verbrauchslabel die ausdrücklich gelesene PV-Ei
 
 Ab 0.3.12 darf der Hover auf einem eindeutig gefundenen Balkensegment ohne Prozenttext ausgelöst werden. Die Formsuche verwendet sichtbare HTML-Elemente innerhalb der geprüften Energiekarte. Ihre Farben und Größen dienen nur zur Auswahl eines Hoverziels; sie liefern weder die Energierichtung noch eine Energiemenge. Diese stammen aus dem frischen sichtbar gerenderten Tooltip. Ohne eindeutiges Ziel und bestätigten Tooltipwert bleibt der Anteil fehlend; die vorhandenen Datums- und Bilanzprüfungen gelten weiterhin.
 
+Ab 0.3.13 wird dieser Weg auch bei vollständig fehlenden Prozentlabels erreicht. Das eindeutig benachbarte Paar darf dann zwei unbeschriftete Segmente enthalten, einschließlich linearer Farbverläufe. Vor jedem Hover wird der vorherige Tooltip geschlossen und das Paar erneut geprüft. Beide ausdrücklich gelesenen Mengen gehen in die Summenprüfung ein; die erneut gelesene PV-Verbrauchsmenge wird weiterhin mit der Produktionskarte verglichen. Zwei Tooltips derselben Richtung sind kein vollständiges Paar und werden abgewiesen.
+
 ## Home Assistant
 
 Die dauerhaften kWh-Gesamtzähler werden als `device_class: energy`, `state_class: total` ohne `last_reset` veröffentlicht. Die reine Tagesanzeige hat keine Zähler-State-Class und ist nicht für das Energie-Dashboard gedacht. Diese Wahl folgt den [Home-Assistant-Sensorregeln](https://developers.home-assistant.io/docs/core/entity/sensor/#how-to-choose-state_class-and-last_reset).

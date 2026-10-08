@@ -39,7 +39,7 @@ Die Messwerte erscheinen nach Abschluss des jeweiligen Abrufs. Auch nach Mittern
 
 ## Stand
 
-**0.3.12** liest bei fehlendem Prozentlabel den echten Tooltip eines eindeutig gefundenen Balkensegments. Deutsch und Englisch werden gleichzeitig erkannt. Aufforderungen zu aktualisierten SolarEdge-Nutzungsbedingungen erhalten den Status `terms_confirmation_required`: persönlich im Portal prüfen, bei Zustimmung selbst bestätigen und das Add-on neu starten. Das Add-on bestätigt keine Bedingungen automatisch. Die Bestätigung der Korrekturen auf dem Nutzergerät steht noch aus.
+**0.3.13** behebt den vorzeitigen Abbruch, wenn eine Energiekarte gar keine Prozentlabels zeigt. Bei einem eindeutigen benachbarten Balkenpaar können beide Tooltipwerte gelesen werden, auch bei Farbverläufen. Deutsch und Englisch werden gleichzeitig erkannt. Der Status `terms_confirmation_required` fordert bei aktualisierten SolarEdge-Nutzungsbedingungen weiterhin zur persönlichen Prüfung und Bestätigung bei Zustimmung auf. Die Bestätigung der Korrekturen auf dem Nutzergerät steht noch aus.
 
 Login, Session, echte Tageswerte, Datumwechsel, MQTT und Energie-Dashboard wurden für frühere Versionen in AMD64-Containern mit separatem Home Assistant geprüft. Der Nutzer hat auf seinem x86-64-Home-Assistant erfolgreiche MQTT-Verbindung, Chromium-Start, Login und einen vollständigen Abruf mit gespeichertem Energie-Ledger bestätigt. ARM64 lässt sich bauen; ein nativer ARM64-Lauf und mehrtägiger Dauerbetrieb sind noch nicht bestätigt. Die Tageswerte und der Historienimport wurden für 0.3.0 zusätzlich mit echtem SolarEdge-Abruf und einer getrennten HA-Testinstanz geprüft. Einzelne Prüfergebnisse und ihr Versionsstand stehen in [VALIDATION.md](solaredge_web/VALIDATION.md).
 

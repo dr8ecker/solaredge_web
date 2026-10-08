@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.13
+
+- Bei null Prozentlabels wird die Balken-Auslesung tatsächlich versucht, statt bereits vorher mit `distribution_labels_missing` abzubrechen. In einem eindeutigen benachbarten Paar können beide unbeschrifteten Segmente einzeln ausgelesen werden; deutsche und englische Tooltiptexte bleiben unterstützt.
+- Balken mit linearem Farbverlauf werden als sichtbare Hoverziele berücksichtigt. Die Energie wird weiterhin ausschließlich aus Tooltipwerten gelesen, niemals aus Farbe, Breite oder Prozentanteilen.
+- Vor jedem Segment wird der vorherige Tooltip geschlossen und die Geometrie erneut geprüft. Doppelte Richtungen werden abgewiesen. Auch ein erneut gelesener Verbrauchs-Eigenverbrauch muss zu Produktion und Verbrauchssumme passen.
+- Bei zunächst leerer Verteilung wartet der Scraper kurz auf tatsächliche Prozentlabels oder ein eindeutiges Balkenpaar. Fehlende Werte bleiben Fehler; es werden keine Ersatznullen eingesetzt. Die Bestätigung auf dem Nutzergerät steht aus.
+
 ## 0.3.12
 
 - Fehlende Energieanteile können aus dem Tooltip eines Balkensegments gelesen werden, auch wenn das Prozentlabel dauerhaft fehlt. Die Suche bleibt in der jeweiligen Energiekarte und verwendet nur ein eindeutig zugeordnetes benachbartes Balkenpaar. Richtung und kWh-Menge stammen ausschließlich aus dem frischen Tooltip; Farben und Prozentanteile liefern keine Energie- oder Richtungswerte.
