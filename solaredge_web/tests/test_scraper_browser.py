@@ -454,6 +454,57 @@ class ScraperBrowserTests(unittest.IsolatedAsyncioTestCase):
         scraper = SolarEdgeScraper(replace(self.config, page_timeout=500))
         self.assertEqual(await scraper.select_today(page), self.day)
 
+    async def test_renamed_erzeugung_card_is_used_after_real_date_change(self):
+        await self.fixture()
+        page = self.browser.page
+        await page.get_by_test_id('dashboard-date-range-input').fill('01.01.2020 – 01.01.2020')
+        await page.evaluate('''today => {
+          const card = document.querySelector('#distribution-component-produktion');
+          card.id = 'distribution-component-erzeugung';
+          card.firstChild.textContent = 'Erzeugung 10 kWh ';
+          document.querySelector('[data-testid="today-button"]').onclick = () => {
+            document.querySelector('[data-testid="dashboard-date-range-input"]').value = today;
+            setTimeout(() => card.firstChild.textContent = 'Erzeugung 10.0 kWh ', 250);
+          };
+        }''', self.date_text)
+        self.assertEqual(await self.scraper.select_today(page), self.day)
+        sample = await self.scraper.day_energy(page, self.day)
+        self.assertEqual(sample.values['pv_energy'], 10)
+        self.assertEqual(sample.values['grid_export_energy'], 5)
+        self.assertEqual(sample.values['self_consumption_energy'], 5)
+
+    async def test_erzeugung_row_without_id_is_selected_beside_consumption(self):
+        await self.fixture()
+        page = self.browser.page
+        await page.evaluate('''() => {
+          const card = document.querySelector('#distribution-component-produktion');
+          card.removeAttribute('id');
+          card.firstChild.textContent = 'Erzeugung ⓘ 10 kWh ';
+          card.parentElement.insertAdjacentHTML('beforeend', '<aside>Erzeugung <span>Ins Netz</span></aside>');
+          document.body.insertAdjacentHTML('beforeend', '<div>Erzeugung 42 kWh</div>');
+        }''')
+        self.assertEqual(await self.scraper.select_today(page), self.day)
+        sample = await self.scraper.day_energy(page, self.day)
+        self.assertEqual(sample.values['pv_energy'], 10)
+        self.assertEqual(sample.values['grid_export_energy'], 5)
+
+    async def test_two_plausible_production_rows_are_ambiguous(self):
+        await self.fixture()
+        page = self.browser.page
+        await page.evaluate('''() => {
+          const card = document.querySelector('#distribution-component-produktion');
+          card.removeAttribute('id');
+          card.firstChild.textContent = 'Erzeugung 10 kWh ';
+          card.after(card.cloneNode(true));
+        }''')
+        scraper = SolarEdgeScraper(replace(self.config, page_timeout=250))
+        with self.assertLogs('app.scraper', level='WARNING') as captured:
+            with self.assertRaises(TimeoutError):
+                await scraper.select_today(page)
+        self.assertIn("'production_card': 'ambiguous'", '\n'.join(captured.output))
+        with self.assertRaises(ValueError):
+            await scraper.day_energy(page, self.day)
+
     async def test_date_input_change_alone_does_not_make_old_energy_ready(self):
         await self.fixture()
         page = self.browser.page

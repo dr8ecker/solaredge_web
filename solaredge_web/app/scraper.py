@@ -18,29 +18,66 @@ from .selectors import SELECTORS, unique
 
 LOGGER = logging.getLogger(__name__)
 
-ENERGY_UI_STATE = r"""refreshRequired => {
-  const visible = el => Boolean(el && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden');
-  const scopes = {
-    kpis: '#dashboard-kpis',
-    production_card: '#distribution-component-produktion',
-    consumption_card: '#distribution-component-verbrauch',
-  };
-  const scopeStatus = Object.fromEntries(Object.entries(scopes).map(([name, selector]) => {
-    const el = document.querySelector(selector);
-    const status = !el ? 'missing' : !visible(el) ? 'hidden' :
-      /\d[\d.,\s]*\s*(?:kWh|MWh|Wh)(?!\/)/i.test(el.innerText) ? 'energy_visible' : 'energy_missing';
-    return [name, status];
+ENERGY_SELECTORS = {
+    name: ','.join(SELECTORS[name]) for name in ('kpis', 'production_card', 'consumption_card', 'chart')
+}
+ENERGY_QUANTITY = r"/\d[\d.,\s]*\s*(?:kWh|MWh|Wh)(?!\/)/i"
+VISIBLE_ELEMENT = "el => Boolean(el && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden')"
+
+RESOLVE_ENERGY_SCOPE = r"""(name, selectors) => {
+  const visible = VISIBLE_ELEMENT;
+  const matches = Array.from(document.querySelectorAll(selectors[name]));
+  const rendered = matches.filter(visible);
+  if (rendered.length > 1) return {status: 'ambiguous'};
+  let node = rendered[0], selector;
+  if (!node && name === 'production_card') {
+    const anchors = Array.from(document.querySelectorAll(selectors.consumption_card)).filter(visible);
+    if (anchors.length === 1) {
+      const [consumption] = anchors;
+      const siblings = Array.from(consumption.parentElement.children);
+      const chart = consumption.closest(selectors.chart);
+      const candidates = new Set([...siblings, ...(chart?.querySelectorAll('[id^="distribution-component-"]') || [])]);
+      const production = Array.from(candidates).filter(el => {
+        if (el === consumption || el.contains(consumption) || !visible(el)) return false;
+        const text = (el.innerText || '').trim();
+        const title = text.split(/[\r\n]|\s+(?=[+-]?\d)/, 1)[0]
+          .replace(/\s*[ⓘℹ]\uFE0F?\s*$/u, '').normalize('NFKC').trim();
+        return /^(Erzeugung|Produktion|Production|Solar Production)$/i.test(title) && ENERGY_QUANTITY.test(text);
+      });
+      if (production.length > 1) return {status: 'ambiguous'};
+      node = production[0];
+      if (siblings.includes(node)) {
+        selector = ':has(> ' + selectors.consumption_card + ') > :nth-child(' + (siblings.indexOf(node) + 1) + ')';
+      }
+    }
+  }
+  if (!node) return {status: matches.length ? 'hidden' : 'missing'};
+  if (node.id && document.querySelectorAll('#' + CSS.escape(node.id)).length === 1) {
+    selector = '#' + CSS.escape(node.id);
+  }
+  const scoped = selector ? document.querySelectorAll(selector) : [];
+  if (scoped.length !== 1 || scoped[0] !== node) return {status: 'ambiguous'};
+  return {node, selector};
+}""".replace('VISIBLE_ELEMENT', VISIBLE_ELEMENT).replace('ENERGY_QUANTITY', ENERGY_QUANTITY)
+
+ENERGY_UI_STATE = r"""({refreshRequired, selectors}) => {
+  const visible = VISIBLE_ELEMENT;
+  const resolve = SCOPE_RESOLVER;
+  const scopes = Object.fromEntries(['kpis', 'production_card', 'consumption_card'].map(name => {
+    const {node, status} = resolve(name, selectors);
+    return [name, status ?? (ENERGY_QUANTITY.test(node.innerText) ? 'energy_visible' : 'energy_missing')];
   }));
   const busy = Array.from(document.querySelectorAll('[role=progressbar],[aria-busy=true]')).filter(visible);
   const transition = window.__seEnergyChange;
   return {
-    scopes: scopeStatus,
+    scopes,
     visible_busy_count: busy.length,
     period_refresh_required: refreshRequired,
     period_refresh_seen: refreshRequired && Boolean(transition?.seen),
     period_refresh_settled: refreshRequired && Boolean(transition?.seen && performance.now() - transition.last > 1000),
   };
-}"""
+}""".replace('SCOPE_RESOLVER', RESOLVE_ENERGY_SCOPE).replace('VISIBLE_ELEMENT', VISIBLE_ELEMENT).replace(
+    'ENERGY_QUANTITY', ENERGY_QUANTITY)
 
 # Discover a unique adjacent pair in the verified card scope. Color identifies
 # rendered rectangles only; direction and quantity always come from a tooltip.
@@ -167,42 +204,50 @@ class SolarEdgeScraper:
 
     async def begin_transition(self, page):
         # Watch energy content even when the app replaces a whole card.
-        await page.evaluate("""() => {
-          const scopes = '#dashboard-kpis,#distribution-component-produktion,#distribution-component-verbrauch';
+        await page.evaluate("""selectors => {
+          const resolve = SCOPE_RESOLVER;
           window.__seObserver?.disconnect();
           window.__seEnergyChange = {seen:false, last:performance.now()};
           window.__seObserver = new MutationObserver(records => {
-            const changed = records.some(({target, addedNodes}) => {
-              const element = target.nodeType === Node.ELEMENT_NODE ? target : target.parentElement;
-              return element?.closest(scopes) || Array.from(addedNodes).some(node =>
-                node instanceof Element && (node.matches(scopes) || node.querySelector(scopes)));
-            });
+            const scopes = ['kpis', 'production_card', 'consumption_card']
+              .map(name => resolve(name, selectors).node).filter(Boolean);
+            const changed = records.some(({target, addedNodes}) => scopes.some(scope =>
+              scope.contains(target) || Array.from(addedNodes).some(node => node.contains(scope))));
             if (changed) {
               window.__seEnergyChange.seen = true;
               window.__seEnergyChange.last = performance.now();
             }
           });
           window.__seObserver.observe(document.body, {childList:true, subtree:true, characterData:true});
-        }""")
+        }""".replace('SCOPE_RESOLVER', RESOLVE_ENERGY_SCOPE), ENERGY_SELECTORS)
 
     async def wait_energy(self, page, *, changed=False):
+        args = {'refreshRequired': changed, 'selectors': ENERGY_SELECTORS}
         try:
             with dashboard_wait('energy_ready'):
-                await page.wait_for_function("""changed => {
-              const state = (READ_STATE)(changed);
+                await page.wait_for_function("""args => {
+              const state = (READ_STATE)(args);
               if (Object.values(state.scopes).some(status => status !== 'energy_visible') ||
-                  state.visible_busy_count || (changed && !state.period_refresh_settled)) return false;
-              if (changed) window.__seObserver?.disconnect();
+                  state.visible_busy_count || (args.refreshRequired && !state.period_refresh_settled)) return false;
+              if (args.refreshRequired) window.__seObserver?.disconnect();
               return true;
-            }""".replace('READ_STATE', ENERGY_UI_STATE), arg=changed, polling=150, timeout=self.config.page_timeout)
+            }""".replace('READ_STATE', ENERGY_UI_STATE), arg=args, polling=150, timeout=self.config.page_timeout)
         except PlaywrightTimeoutError:
             try:
-                state = await asyncio.wait_for(page.evaluate(ENERGY_UI_STATE, changed), timeout=2)
+                state = await asyncio.wait_for(page.evaluate(ENERGY_UI_STATE, args), timeout=2)
             except Exception:
                 LOGGER.warning('Energy UI state unavailable')
             else:
                 LOGGER.warning('Energy UI state: %s', state)
             raise
+
+    async def energy_card_selector(self, page, name):
+        selector = await page.evaluate(
+            '({name, selectors}) => (SCOPE_RESOLVER)(name, selectors).selector'.replace('SCOPE_RESOLVER', RESOLVE_ENERGY_SCOPE),
+            {'name': name, 'selectors': ENERGY_SELECTORS})
+        if not selector:
+            raise ValueError(f"Selector missing or ambiguous: {name}; run mode=discovery")
+        return selector
 
     async def select_today(self, page):
         before_dates = await self.selected_dates(page)
@@ -266,8 +311,10 @@ class SolarEdgeScraper:
         if await self.selected_dates(page) != (expected, expected):
             raise ValueError("Refusing overlapping or wrong energy period")
         quantities = {}
-        production = await unique(page, 'production_card')
-        consumption = await unique(page, 'consumption_card')
+        production_selector = await self.energy_card_selector(page, 'production_card')
+        consumption_selector = await self.energy_card_selector(page, 'consumption_card')
+        production = page.locator(production_selector)
+        consumption = page.locator(consumption_selector)
         quantities['pv_energy'] = ValueParser.parse(await production.inner_text(), 'kWh', field='production_card')
         quantities['consumption_energy'] = ValueParser.parse(await consumption.inner_text(), 'kWh', field='consumption_card')
         kpi = ValueParser.parse(await (await unique(page, 'kpis')).inner_text(), 'kWh', field='production_kpi')
@@ -281,8 +328,9 @@ class SolarEdgeScraper:
         if quantities['consumption_energy'].value == 0:
             quantities['grid_import_energy'] = quantities['consumption_energy']
             quantities['self_consumption_energy'] = quantities['consumption_energy']
-        for card, card_name, allowed in ((production, 'production_card', {'grid_export_energy', 'self_consumption_energy'}),
-                                         (consumption, 'consumption_card', {'grid_import_energy', 'self_consumption_energy'})):
+        for card, selector, card_name, allowed in (
+                (production, production_selector, 'production_card', {'grid_export_energy', 'self_consumption_energy'}),
+                (consumption, consumption_selector, 'consumption_card', {'grid_import_energy', 'self_consumption_energy'})):
             total = quantities['pv_energy' if card is production else 'consumption_energy']
             if total.value == 0:
                 # A displayed zero total of nonnegative components proves zero.
@@ -304,7 +352,7 @@ class SolarEdgeScraper:
                         /^\d+(?:[.,]\d+)?\s*%$/.test(el.innerText?.trim() || ''));
                       return labels || (BAR_POSITIONS)(scope).length > 0;
                     }""".replace('BAR_POSITIONS', UNLABELLED_BAR_POSITIONS),
-                        arg=SELECTORS[card_name][0], timeout=1500)
+                        arg=selector, timeout=1500)
                 except PlaywrightTimeoutError:
                     pass
                 label_count = await labels.count()

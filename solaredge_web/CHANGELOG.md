@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.16
+
+- Erkennt die im deutschen SolarEdge-Portal umbenannte Zeile „Erzeugung“ und die bisherigen Produktions-IDs. Bei abweichender ID kann eine eindeutig beschriftete Zeile mit sichtbarem Energiewert neben „Verbrauch“ erkannt werden.
+- Datumswechsel, Ladeprüfung und Tooltip-Auslesung verwenden dieselbe Zeile. Bei mehreren passenden Zeilen meldet das Protokoll `ambiguous`.
+
 ## 0.3.15
 
 - Der normale Abruf prüft nach dem Laden der Monitoring-Seite direkt auf Dashboard, Anlagenseite, Anmeldeformular oder manuelle Bestätigung. So werden auch ein direkt geöffnetes Dashboard und ein Anmeldeformular ohne die erwarteten Begrüßungstexte erkannt.

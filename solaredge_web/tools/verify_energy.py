@@ -27,7 +27,10 @@ async def main():
         for day in (today, today-timedelta(days=1), today-timedelta(days=2)):
             if day != today:
                 await scraper.previous_day(browser.page, day)
-            print('PERIOD', day.isoformat(), 'CARD', await browser.page.locator('#distribution-component-produktion').inner_text(), await browser.page.locator('#distribution-component-verbrauch').inner_text())
+            production = await scraper.energy_card_selector(browser.page, 'production_card')
+            consumption = await scraper.energy_card_selector(browser.page, 'consumption_card')
+            print('PERIOD', day.isoformat(), 'CARD', await browser.page.locator(production).inner_text(),
+                  await browser.page.locator(consumption).inner_text())
             sample = await scraper.day_energy(browser.page, day)
             print('ENERGY', json.dumps({k:str(v) for k,v in sample.values.items()}))
         await scraper.select_today(browser.page)
