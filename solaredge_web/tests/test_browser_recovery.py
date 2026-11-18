@@ -6,11 +6,12 @@ import unittest
 from pathlib import Path
 from unittest.mock import AsyncMock, Mock, patch
 
-from playwright.async_api import Error
+from playwright.async_api import Error, TimeoutError
 
 from app.browser import BrowserManager
 from app.config import Config
 from app.diagnostics import failure_details
+from app.navigator import SolarEdgeNavigator
 from app.runner import run_normal
 from app.parser import ParseError, ValueParser
 from app.models import ScrapeResult
@@ -125,6 +126,60 @@ class BrowserRecoveryTests(unittest.IsolatedAsyncioTestCase):
         result=await self.manager.load_monitoring()
         self.assertTrue(result['signals']['welcome_visible'])
         self.assertIsNone(result['http_status'])
+
+    async def test_navigation_waits_for_a_visible_exact_plant_match(self):
+        await self.manager.start()
+        await self.manager.page.set_content('''<p>Spaeth West</p><button hidden>Spaeth</button>
+          <script>
+            window.clicked = 0;
+            setTimeout(() => {
+              const plant = document.createElement('button');
+              plant.textContent = 'Spaeth';
+              plant.onclick = () => {
+                window.clicked++;
+                document.body.innerHTML = '<h1>Spaeth</h1><div id="se-date-range-picker">Day</div><div id="dashboard-kpis">5 kWh</div>';
+              };
+              document.body.append(plant);
+            }, 350);
+          </script>''')
+        await SolarEdgeNavigator(self.manager.config).open_dashboard(self.manager.page)
+        self.assertEqual(await self.manager.page.evaluate('window.clicked'), 1)
+
+    async def test_navigation_rejects_two_visible_exact_plant_matches(self):
+        await self.manager.start()
+        await self.manager.page.set_content('<button>Spaeth</button><button>Spaeth</button>')
+        with self.assertRaises(ValueError) as caught:
+            await SolarEdgeNavigator(self.manager.config).open_dashboard(self.manager.page)
+        self.assertEqual(failure_details(caught.exception)['reason'], 'plant_name_ambiguous')
+
+    async def test_direct_dashboard_waits_for_its_plant_name(self):
+        await self.manager.start()
+        page = self.manager.page
+        await page.set_content('''<div id="se-date-range-picker">Day</div>
+          <div id="dashboard-kpis">5 kWh</div><h1>Loading</h1>
+          <script>setTimeout(() => document.querySelector('h1').textContent = 'Spaeth', 350);</script>''')
+        await SolarEdgeNavigator(self.manager.config).open_dashboard(page)
+        self.assertEqual(await page.get_by_role('heading').inner_text(), 'Spaeth')
+
+    async def test_timeout_saves_the_failed_dom_without_publishing_energy(self):
+        await self.manager.start()
+        await self.manager.page.set_content('<div>Produktion 5 kWh</div>')
+        scraper = Mock(select_today=AsyncMock(side_effect=TimeoutError('energy_ready')))
+        publisher = Mock(connected=True, start=AsyncMock(), close=AsyncMock())
+        ledger = Mock()
+        with patch('app.runner.BrowserManager', return_value=self.manager), \
+             patch('app.runner.SolarEdgeLogin', return_value=Mock(ensure=AsyncMock())), \
+             patch('app.runner.SolarEdgeNavigator', return_value=Mock(open_dashboard=AsyncMock())), \
+             patch('app.runner.SolarEdgeScraper', return_value=scraper), \
+             patch('app.runner.MqttPublisher', return_value=publisher), \
+             patch('app.runner.EnergyLedger', return_value=ledger):
+            self.assertEqual(await run_normal(self.manager.config, once=True), 1)
+        report = json.loads((self.manager.config.data_dir / 'dashboard_failure_report.json').read_text(encoding='utf-8'))
+        self.assertEqual(report['failure']['kind'], 'timeout')
+        self.assertEqual(report['failure']['reason'], 'energy_ready')
+        self.assertTrue(any('5 kWh' in element['text'] for element in report['frames'][0]['elements']))
+        ledger.apply.assert_not_called()
+        self.assertFalse(any(call.kwargs.get('solar_success') for call in publisher.update.call_args_list))
 
     async def test_validation_failure_saves_the_failed_dom_before_idle_without_publishing_energy(self):
         await self.manager.start()

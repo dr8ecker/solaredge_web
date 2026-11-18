@@ -227,9 +227,11 @@ async def run_normal(config, *, once=False):
                 details = {**failure_details(error), 'stage':browser.stage, 'browser_connected':browser.connected,
                            'page_crashed':browser.page_crashed, **runtime_details()}
                 LOGGER.warning('Dashboard failure details: %s', details)
-                if isinstance(error, ValueError):
-                    signature = (details['reason'], details.get('field'), tuple(details.get('missing_fields', ())))
-                    if browser.stage == 'dashboard_scrape' and browser.usable and signature not in reported_failures:
+                if details['kind'] in {'validation', 'timeout'}:
+                    signature = (browser.stage, details['kind'], details.get('reason'), details.get('field'),
+                                 tuple(details.get('missing_fields', ())))
+                    if (browser.stage in {'plant_navigation', 'dashboard_scrape'} and browser.usable
+                            and signature not in reported_failures):
                         try:
                             # Preserve the failed UI before idle discards it. One
                             # bounded report per reason until the next success.
@@ -240,7 +242,8 @@ async def run_normal(config, *, once=False):
                             LOGGER.warning('Private dashboard failure report saved: dashboard_failure_report.json')
                         except Exception as diagnostic_error:
                             LOGGER.warning('Dashboard failure report unavailable: %s', failure_details(diagnostic_error))
-                    LOGGER.warning('DOM/date/energy validation failed (%s); use mode=discovery for further inspection', details['reason'])
+                    if isinstance(error, ValueError):
+                        LOGGER.warning('DOM/date/energy validation failed (%s); use mode=discovery for further inspection', details['reason'])
                 health.update(status='error', consecutive_failures=failures, last_failure=details)
                 if publisher:
                     publisher.update({'scraper_status':'error'})

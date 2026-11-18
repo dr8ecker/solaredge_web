@@ -2,9 +2,12 @@
 """Synthetic DOM fixtures reproduce discovered scopes, including async loading."""
 import tempfile
 import unittest
+from dataclasses import replace
 from datetime import date, datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
+
+from playwright.async_api import TimeoutError
 
 from app.browser import BrowserManager
 from app.config import Config
@@ -423,6 +426,42 @@ class ScraperBrowserTests(unittest.IsolatedAsyncioTestCase):
         }''',self.date_text)
         await self.scraper.select_today(self.browser.page)
         self.assertIn('10 kWh',await self.browser.page.locator('#dashboard-kpis').inner_text())
+
+    async def test_date_change_can_replace_the_entire_chart_and_kpi(self):
+        await self.fixture()
+        page = self.browser.page
+        await page.get_by_test_id('dashboard-date-range-input').fill('01.01.2020 – 01.01.2020')
+        await page.evaluate('''today => {
+          document.querySelector('[data-testid="today-button"]').onclick = () => {
+            document.querySelector('[data-testid="dashboard-date-range-input"]').value = today;
+            setTimeout(() => {
+              for (const selector of ['#dashboard-kpis', '[data-testid="power-energy-chart-component"]']) {
+                const old = document.querySelector(selector);
+                const updated = old.cloneNode(true);
+                old.replaceWith(updated);
+              }
+              document.querySelector('#dashboard-kpis span').textContent = '11 kWh';
+            }, 300);
+          };
+        }''', self.date_text)
+        self.assertEqual(await self.scraper.select_today(page), self.day)
+        self.assertIn('11 kWh', await page.locator('#dashboard-kpis').inner_text())
+
+    async def test_date_input_change_alone_does_not_make_old_energy_ready(self):
+        await self.fixture()
+        page = self.browser.page
+        await page.get_by_test_id('dashboard-date-range-input').fill('01.01.2020 – 01.01.2020')
+        await page.evaluate('''today => {
+          document.querySelector('[data-testid="today-button"]').onclick = () => {
+            document.querySelector('[data-testid="dashboard-date-range-input"]').value = today;
+            document.querySelector('[data-testid="power-energy-chart-component"] button')
+              .insertAdjacentHTML('beforeend', '<span></span>');
+          };
+        }''', self.date_text)
+        scraper = SolarEdgeScraper(replace(self.config, page_timeout=1500))
+        with self.assertRaises(TimeoutError) as caught:
+            await scraper.select_today(page)
+        self.assertEqual(failure_details(caught.exception)['reason'], 'energy_ready')
 
     async def test_zero_production_does_not_require_nonexistent_pv_slice(self):
         await self.fixture(production='0')

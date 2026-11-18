@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.14
+
+- Die Navigation wartet auf einen sichtbaren, exakten Treffer für den konfigurierten Anlagennamen. Mehrere Treffer werden abgewiesen, und der Anlagenname wird im geöffneten Dashboard bestätigt.
+- Der Datumswechsel erkennt neu aufgebaute Energiekarten und KPI-Bereiche. Eine Änderung am Datumsfeld oder an den Diagrammbedienelementen allein gibt die bisherigen Energiewerte nicht frei.
+- Das Fehlerlog nennt konkrete Wartepunkte für Anlagenwahl, Energieansicht, Datumswechsel und Tooltips. Auch bei Timeouts wird der sichtbare Seitenzustand als privater Fehlerbericht gesichert.
+
 ## 0.3.13
 
 - Bei null Prozentlabels wird die Balken-Auslesung tatsächlich versucht, statt bereits vorher mit `distribution_labels_missing` abzubrechen. In einem eindeutigen benachbarten Paar können beide unbeschrifteten Segmente einzeln ausgelesen werden; deutsche und englische Tooltiptexte bleiben unterstützt.

@@ -9,6 +9,7 @@ from decimal import Decimal
 from zoneinfo import ZoneInfo
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 
+from .diagnostics import dashboard_wait
 from .discovery import KEYWORDS
 from .models import DayEnergy, ScrapeResult
 from .parser import ValueParser, ParseError
@@ -83,12 +84,14 @@ class SolarEdgeScraper:
 
     async def unlabelled_bar_energy(self, page, card, card_name, allowed):
         await page.mouse.move(0, 0)
-        await page.get_by_role('tooltip').wait_for(state='hidden', timeout=5000)
+        with dashboard_wait('tooltip_dismiss'):
+            await page.get_by_role('tooltip').wait_for(state='hidden', timeout=5000)
         positions = await card.evaluate(UNLABELLED_BAR_POSITIONS)
         parts, fields, unknown = {}, [], 0
         for index in range(len(positions)):
             await page.mouse.move(0, 0)
-            await page.get_by_role('tooltip').wait_for(state='hidden', timeout=5000)
+            with dashboard_wait('tooltip_dismiss'):
+                await page.get_by_role('tooltip').wait_for(state='hidden', timeout=5000)
             current = await card.evaluate(UNLABELLED_BAR_POSITIONS)
             if len(current) != len(positions):
                 continue
@@ -138,32 +141,40 @@ class SolarEdgeScraper:
         return values
 
     async def begin_transition(self, page):
-        # Observe the actual energy scopes, not URL requests or chart internals.
+        # Watch energy content even when the app replaces a whole card.
         await page.evaluate("""() => {
+          const scopes = '#dashboard-kpis,#distribution-component-produktion,#distribution-component-verbrauch';
           window.__seObserver?.disconnect();
           window.__seEnergyChange = {seen:false, last:performance.now()};
-          window.__seObserver = new MutationObserver(() => {
-            window.__seEnergyChange.seen = true;
-            window.__seEnergyChange.last = performance.now();
+          window.__seObserver = new MutationObserver(records => {
+            const changed = records.some(({target, addedNodes}) => {
+              const element = target.nodeType === Node.ELEMENT_NODE ? target : target.parentElement;
+              return element?.closest(scopes) || Array.from(addedNodes).some(node =>
+                node instanceof Element && (node.matches(scopes) || node.querySelector(scopes)));
+            });
+            if (changed) {
+              window.__seEnergyChange.seen = true;
+              window.__seEnergyChange.last = performance.now();
+            }
           });
-          for(const scope of ['#dashboard-kpis','[data-testid="power-energy-chart-component"]']) {
-            const node = document.querySelector(scope);
-            if(node) window.__seObserver.observe(node, {childList:true, subtree:true, characterData:true});
-          }
+          window.__seObserver.observe(document.body, {childList:true, subtree:true, characterData:true});
         }""")
 
     async def wait_energy(self, page, *, changed=False):
-        await page.wait_for_function("""changed => {
-          const visible = el => el && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden';
-          const scopes = ['#dashboard-kpis','#distribution-component-produktion','#distribution-component-verbrauch'];
-          const ready = scopes.every(s => {
-            const el = document.querySelector(s);
-            return visible(el) && /[0-9][.,0-9\\s]*\\s*(?:kWh|MWh|Wh)(?!\\/)/i.test(el.innerText);
-          });
-          const progress = Array.from(document.querySelectorAll('[role=progressbar],[aria-busy=true]')).some(visible);
-          const transition = window.__seEnergyChange;
-          return ready && !progress && (!changed || (transition?.seen && performance.now() - transition.last > 1000));
-        }""", arg=changed, timeout=self.config.page_timeout)
+        with dashboard_wait('energy_ready'):
+            await page.wait_for_function("""changed => {
+              const visible = el => el && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden';
+              const scopes = ['#dashboard-kpis','#distribution-component-produktion','#distribution-component-verbrauch'];
+              const ready = scopes.every(s => {
+                const el = document.querySelector(s);
+                return visible(el) && /[0-9][.,0-9\\s]*\\s*(?:kWh|MWh|Wh)(?!\\/)/i.test(el.innerText);
+              });
+              const progress = Array.from(document.querySelectorAll('[role=progressbar],[aria-busy=true]')).some(visible);
+              const transition = window.__seEnergyChange;
+              if (!ready || progress || (changed && !(transition?.seen && performance.now() - transition.last > 1000))) return false;
+              if (changed) window.__seObserver?.disconnect();
+              return true;
+            }""", arg=changed, timeout=self.config.page_timeout)
 
     async def select_today(self, page):
         picker = await unique(page, 'date_picker')
@@ -172,11 +183,14 @@ class SolarEdgeScraper:
         before_dates = await self.selected_dates(page)
         local_today = datetime.now(ZoneInfo(self.config.site_timezone)).date()
         changed = current not in {'Tag', 'Day'} or before_dates != (local_today, local_today)
-        await self.begin_transition(page)
-        await (await unique(page, 'today')).click()
+        if changed:
+            await self.begin_transition(page)
+        with dashboard_wait('today_button'):
+            await (await unique(page, 'today')).click()
         chart = await unique(page, 'chart')
         energy = chart.get_by_role('button', name=re.compile(r'^(Energie|Energy)$'))
-        await energy.click()
+        with dashboard_wait('energy_tab'):
+            await energy.click()
         await self.wait_energy(page, changed=changed)
         dates = await self.selected_dates(page)
         if dates[0] != dates[1]:
@@ -192,8 +206,10 @@ class SolarEdgeScraper:
 
     async def previous_day(self, page, expected: date):
         await self.begin_transition(page)
-        await (await unique(page, 'previous')).click()
-        await page.wait_for_function("""expected => document.querySelector('[data-testid="dashboard-date-range-input"]')?.value === expected""", arg=f'{expected:%d.%m.%Y} – {expected:%d.%m.%Y}')
+        with dashboard_wait('previous_button'):
+            await (await unique(page, 'previous')).click()
+        with dashboard_wait('historical_date'):
+            await page.wait_for_function("""expected => document.querySelector('[data-testid="dashboard-date-range-input"]')?.value === expected""", arg=f'{expected:%d.%m.%Y} – {expected:%d.%m.%Y}')
         await self.wait_energy(page, changed=True)
         if await self.selected_dates(page) != (expected, expected):
             raise ValueError("Historical period did not match requested day")
@@ -212,7 +228,8 @@ class SolarEdgeScraper:
             # the same date once, then read real tooltips with all checks intact.
             LOGGER.warning('Energy distribution labels incomplete in %s; widening browser to 1920 px for one tooltip retry', error.field)
             await page.mouse.move(0, 0)
-            await page.get_by_role('tooltip').wait_for(state='hidden', timeout=5000)
+            with dashboard_wait('tooltip_dismiss'):
+                await page.get_by_role('tooltip').wait_for(state='hidden', timeout=5000)
             await page.set_viewport_size({**viewport, 'width': 1920})
             await page.evaluate('() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))')
             await self.wait_energy(page)
@@ -269,10 +286,13 @@ class SolarEdgeScraper:
             for label in await labels.all():
                 # Dismiss the previous tooltip even when both portions say 50%.
                 await page.mouse.move(0, 0)
-                await page.get_by_role('tooltip').wait_for(state='hidden', timeout=5000)
+                with dashboard_wait('tooltip_dismiss'):
+                    await page.get_by_role('tooltip').wait_for(state='hidden', timeout=5000)
                 percent = (await label.inner_text()).strip()
-                await label.hover()
-                await page.wait_for_function("percent => Array.from(document.querySelectorAll('[role=tooltip]')).some(el => el.getClientRects().length && el.innerText.trim().startsWith(percent + ' '))", arg=percent, timeout=5000)
+                with dashboard_wait('tooltip_hover'):
+                    await label.hover()
+                with dashboard_wait('percentage_tooltip'):
+                    await page.wait_for_function("percent => Array.from(document.querySelectorAll('[role=tooltip]')).some(el => el.getClientRects().length && el.innerText.trim().startsWith(percent + ' '))", arg=percent, timeout=5000)
                 tooltip = page.get_by_role('tooltip')
                 if await tooltip.count() != 1:
                     raise ParseError("Tooltip is ambiguous", field=card_name)

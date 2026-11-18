@@ -3,12 +3,18 @@
 
 import platform
 import re
+from contextlib import contextmanager
 from pathlib import Path
+
+from playwright.async_api import TimeoutError as BrowserTimeoutError
 
 from .parser import ParseError
 from .selectors import SELECTORS
 
 VALIDATION_REASONS = {
+    'Plant name is ambiguous': 'plant_name_ambiguous',
+    'Configured plant not uniquely found': 'plant_name_not_found',
+    'Dashboard plant name not confirmed': 'dashboard_plant_not_confirmed',
     'Today did not select a single calendar day': 'today_not_single_day',
     'Unrecognized UI date format; run discovery': 'date_format_unrecognized',
     'Historical period did not match requested day': 'historical_date_mismatch',
@@ -18,6 +24,21 @@ VALIDATION_REASONS = {
     'SolarEdge Today differs from site_timezone; no energy published': 'site_timezone_date_mismatch',
     'Day changed during scrape; retry before updating counters': 'day_changed_during_scrape',
 }
+
+DASHBOARD_WAITS = {
+    'plant_selection_click', 'dashboard_date_picker', 'dashboard_kpis',
+    'today_button', 'energy_tab', 'energy_ready', 'historical_date',
+    'previous_button', 'tooltip_dismiss', 'tooltip_hover', 'percentage_tooltip',
+}
+
+
+@contextmanager
+def dashboard_wait(step):
+    try:
+        yield
+    except BrowserTimeoutError:
+        raise BrowserTimeoutError(step) from None
+
 
 NETWORK_ERRORS = {
     'ERR_NAME_NOT_RESOLVED', 'ERR_CONNECTION_REFUSED', 'ERR_CONNECTION_RESET',
@@ -54,6 +75,8 @@ def failure_details(error):
         kind = 'navigation_interrupted'
     result = {'error_type':name if name in {'Error', 'TimeoutError', 'TargetClosedError', 'RuntimeError', 'ValueError', 'ParseError', 'OSError'} else 'OtherError',
               'kind':kind, 'network_code':code}
+    if kind == 'timeout' and message in DASHBOARD_WAITS:
+        result['reason'] = message
     if isinstance(error, ValueError):
         result.update(kind='validation', reason=VALIDATION_REASONS.get(message, 'unknown_validation'))
         if isinstance(error, ParseError):
