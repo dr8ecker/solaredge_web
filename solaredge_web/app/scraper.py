@@ -1,9 +1,10 @@
 # Copyright (c) 2026 8ecker.de
 """Read quantities from rendered cards, SVG text and visible hover tooltips."""
 
+import asyncio
+import logging
 import re
 import unicodedata
-import logging
 from datetime import date, datetime, timezone
 from decimal import Decimal
 from zoneinfo import ZoneInfo
@@ -16,6 +17,30 @@ from .parser import ValueParser, ParseError
 from .selectors import SELECTORS, unique
 
 LOGGER = logging.getLogger(__name__)
+
+ENERGY_UI_STATE = r"""refreshRequired => {
+  const visible = el => Boolean(el && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden');
+  const scopes = {
+    kpis: '#dashboard-kpis',
+    production_card: '#distribution-component-produktion',
+    consumption_card: '#distribution-component-verbrauch',
+  };
+  const scopeStatus = Object.fromEntries(Object.entries(scopes).map(([name, selector]) => {
+    const el = document.querySelector(selector);
+    const status = !el ? 'missing' : !visible(el) ? 'hidden' :
+      /\d[\d.,\s]*\s*(?:kWh|MWh|Wh)(?!\/)/i.test(el.innerText) ? 'energy_visible' : 'energy_missing';
+    return [name, status];
+  }));
+  const busy = Array.from(document.querySelectorAll('[role=progressbar],[aria-busy=true]')).filter(visible);
+  const transition = window.__seEnergyChange;
+  return {
+    scopes: scopeStatus,
+    visible_busy_count: busy.length,
+    period_refresh_required: refreshRequired,
+    period_refresh_seen: refreshRequired && Boolean(transition?.seen),
+    period_refresh_settled: refreshRequired && Boolean(transition?.seen && performance.now() - transition.last > 1000),
+  };
+}"""
 
 # Discover a unique adjacent pair in the verified card scope. Color identifies
 # rendered rectangles only; direction and quantity always come from a tooltip.
@@ -161,28 +186,30 @@ class SolarEdgeScraper:
         }""")
 
     async def wait_energy(self, page, *, changed=False):
-        with dashboard_wait('energy_ready'):
-            await page.wait_for_function("""changed => {
-              const visible = el => el && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden';
-              const scopes = ['#dashboard-kpis','#distribution-component-produktion','#distribution-component-verbrauch'];
-              const ready = scopes.every(s => {
-                const el = document.querySelector(s);
-                return visible(el) && /[0-9][.,0-9\\s]*\\s*(?:kWh|MWh|Wh)(?!\\/)/i.test(el.innerText);
-              });
-              const progress = Array.from(document.querySelectorAll('[role=progressbar],[aria-busy=true]')).some(visible);
-              const transition = window.__seEnergyChange;
-              if (!ready || progress || (changed && !(transition?.seen && performance.now() - transition.last > 1000))) return false;
+        try:
+            with dashboard_wait('energy_ready'):
+                await page.wait_for_function("""changed => {
+              const state = (READ_STATE)(changed);
+              if (Object.values(state.scopes).some(status => status !== 'energy_visible') ||
+                  state.visible_busy_count || (changed && !state.period_refresh_settled)) return false;
               if (changed) window.__seObserver?.disconnect();
               return true;
-            }""", arg=changed, timeout=self.config.page_timeout)
+            }""".replace('READ_STATE', ENERGY_UI_STATE), arg=changed, polling=150, timeout=self.config.page_timeout)
+        except PlaywrightTimeoutError:
+            try:
+                state = await asyncio.wait_for(page.evaluate(ENERGY_UI_STATE, changed), timeout=2)
+            except Exception:
+                LOGGER.warning('Energy UI state unavailable')
+            else:
+                LOGGER.warning('Energy UI state: %s', state)
+            raise
 
     async def select_today(self, page):
-        picker = await unique(page, 'date_picker')
-        combo = picker.get_by_role('combobox')
-        current = (await combo.inner_text()).strip()
         before_dates = await self.selected_dates(page)
         local_today = datetime.now(ZoneInfo(self.config.site_timezone)).date()
-        changed = current not in {'Tag', 'Day'} or before_dates != (local_today, local_today)
+        # Clicking Today can be a no-op when the date input already shows this
+        # single day. Require new energy content when the date range changes.
+        changed = before_dates != (local_today, local_today)
         if changed:
             await self.begin_transition(page)
         with dashboard_wait('today_button'):

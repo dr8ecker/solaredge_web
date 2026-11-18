@@ -26,6 +26,7 @@ USERNAME_INPUT = r"""el => {
     return labels.some(label => /^(Email(?: address)?|E[-\s]?Mail(?:[-\s]?Adresse)?|Benutzername|Username)$/i.test(label));
 }"""
 SUBMIT_SELECTOR = 'button[type="submit" i], button:not([type]), input[type="submit" i]'
+CHALLENGE_PATTERN = r'verify you are human|bestätigen.{0,30}Mensch|security check|Sicherheitsüberprüfung|captcha|verification code|Bestätigungscode|multi.factor|two.factor|Einmalpasswort'
 
 # Only fixed flags/counts leave the page. Never return text, field values,
 # URLs, cookies or storage contents in login diagnostics.
@@ -50,10 +51,13 @@ LOGIN_UI_STATE = r"""monitoringHost => {
         /^(Anlagen|Sites)$/.test((el.textContent || '').trim()) && visible(el) &&
         /^(Anlagen|Sites)$/.test((el.innerText || '').trim()));
     const dashboard = visible(document.querySelector('#se-date-range-picker'));
-    const challenge = /verify you are human|security check|Sicherheitsüberprüfung|captcha|verification code|Bestätigungscode|multi.factor|two.factor|Einmalpasswort/i.test(document.body?.innerText || '') ||
-        Array.from(document.querySelectorAll('iframe[title]')).some(el =>
-            visible(el) && /challenge|captcha/i.test(el.title));
+    const text = document.body?.innerText || '';
+    const frames = Array.from(document.querySelectorAll('iframe')).filter(visible);
+    const challenge = /CHALLENGE_TEXT/i.test(text) || frames.some(el => /challenge|captcha/i.test(el.title));
     return {
+        body_text_present: Boolean(text.trim()),
+        loading_indicator_visible: Array.from(document.querySelectorAll('[role=progressbar],[aria-busy=true]')).some(visible),
+        visible_frame_count: frames.length,
         email_field_visible: email,
         password_field_visible: password,
         password_form_count: passwordForms.length,
@@ -68,7 +72,8 @@ LOGIN_UI_STATE = r"""monitoringHost => {
         visible_input_count: inputs.length,
         visible_form_count: forms.filter(visible).length
     };
-}""".replace('USERNAME_FUNCTION', USERNAME_INPUT).replace('SUBMIT_BUTTONS', SUBMIT_SELECTOR).replace('TERMS_FUNCTION', TERMS_VISIBLE)
+}""".replace('USERNAME_FUNCTION', USERNAME_INPUT).replace('SUBMIT_BUTTONS', SUBMIT_SELECTOR).replace(
+    'TERMS_FUNCTION', TERMS_VISIBLE).replace('CHALLENGE_TEXT', CHALLENGE_PATTERN)
 
 
 class ManualLoginRequired(RuntimeError):
@@ -88,7 +93,7 @@ async def check_challenge(page):
     if await page.evaluate(TERMS_VISIBLE):
         raise TermsConfirmationRequired('SolarEdge requires confirmation of updated terms. Review and accept them yourself in the SolarEdge portal if you agree, then restart the add-on. Automatic acceptance is disabled.')
     text = await page.locator('body').inner_text()
-    if re.search(r'verify you are human|security check|Sicherheitsüberprüfung|captcha|verification code|Bestätigungscode|multi.factor|two.factor|Einmalpasswort', text, re.I):
+    if re.search(CHALLENGE_PATTERN, text, re.I):
         raise ManualLoginRequired("Manual security check; restart after resolving login")
     frames = page.locator('iframe[title]')
     for frame in await frames.all():
@@ -157,7 +162,7 @@ class SolarEdgeLogin:
 
     async def ensure(self, browser):
         page = browser.page
-        await browser.load_monitoring()
+        await browser.navigate_monitoring()
         browser.stage = 'session_ui_wait'
         # Wait for the shell to finish routing before deciding to log in.
         state = await self.wait_for_login_destination(page, allow_entry=True)

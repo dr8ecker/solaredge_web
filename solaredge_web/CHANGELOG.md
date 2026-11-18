@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.15
+
+- Der normale Abruf prüft nach dem Laden der Monitoring-Seite direkt auf Dashboard, Anlagenseite, Anmeldeformular oder manuelle Bestätigung. So werden auch ein direkt geöffnetes Dashboard und ein Anmeldeformular ohne die erwarteten Begrüßungstexte erkannt.
+- Wenn der Portalzustand unklar bleibt, zeigt `Login UI state` an, ob Text, ein sichtbarer Ladeindikator oder eingebettete Frames vorhanden sind. Seiteninhalte und Eingabewerte bleiben privat.
+- Zeigt der Datumsbereich bereits den heutigen Einzeltag, verlangt der Scraper keine zusätzliche Neuberechnung. Bei einem tatsächlichen Datumswechsel wartet er weiter auf aktualisierte Energiedaten.
+- `Energy UI state` zeigt beim Timeout den Zustand von KPI, Produktion und Verbrauch, die Anzahl sichtbarer Ladeindikatoren und den Stand der Datumsaktualisierung.
+
 ## 0.3.14
 
 - Die Navigation wartet auf einen sichtbaren, exakten Treffer für den konfigurierten Anlagennamen. Mehrere Treffer werden abgewiesen, und der Anlagenname wird im geöffneten Dashboard bestätigt.

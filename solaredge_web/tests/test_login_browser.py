@@ -239,7 +239,7 @@ class LoginBrowserTests(unittest.IsolatedAsyncioTestCase):
         })
         async def load_untrusted_destination():
             await self.browser.page.goto('https://untrusted.example.test/')
-        with patch.object(self.browser,'load_monitoring',side_effect=load_untrusted_destination):
+        with patch.object(self.browser,'navigate_monitoring',side_effect=load_untrusted_destination):
             with self.assertRaises(AuthenticationError):
                 await login.ensure(self.browser)
         self.assertEqual(self.submissions,0)
@@ -263,6 +263,8 @@ class LoginBrowserTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("'password_field_visible': True",output)
         self.assertIn("'visible_input_count': 2",output)
         self.assertIn("'email_field_visible': False",output)
+        self.assertIn("'body_text_present': True",output)
+        self.assertIn("'loading_indicator_visible': False",output)
         for private in ('PRIVATE_','user@example.test','private-redirect','https://','login.solaredge.com'):
             self.assertNotIn(private,output)
     async def test_normal_login_persists_and_reuses_session(self):
@@ -284,11 +286,41 @@ class LoginBrowserTests(unittest.IsolatedAsyncioTestCase):
         self.assertGreater(login.next_login,0)
     async def test_monitoring_timeout_does_not_arm_login_cooldown(self):
         login=await self.start()
-        with patch.object(self.browser, 'load_monitoring', AsyncMock(side_effect=TimeoutError('UI not ready'))):
+        with patch.object(self.browser, 'navigate_monitoring', AsyncMock(side_effect=TimeoutError('Navigation timed out'))):
             with self.assertRaises(TimeoutError): await login.ensure(self.browser)
         self.assertEqual(login.next_login,0)
         await login.ensure(self.browser)
         self.assertEqual(await self.browser.page.evaluate('window.submissions'),1)
+    async def test_direct_dashboard_without_entry_page_text_reuses_session(self):
+        login = await self.start_routed({
+            'https://monitoring.solaredge.com/': '<div id="se-date-range-picker">Heute</div><h1>Fixture Plant</h1>',
+        })
+        await login.ensure(self.browser)
+        self.assertEqual(self.browser.stage, 'session_ui_wait')
+        self.assertEqual(self.submissions, 0)
+        self.assertTrue((await login.ui_state(self.browser.page))['session_confirmed'])
+    async def test_login_redirect_without_entry_page_text_reaches_form(self):
+        form = self.login_form().replace('<h1>SolarEdge</h1>', '').replace('Sign in', 'Continue')
+        login = await self.start_routed({
+            'https://login.solaredge.com/': form,
+            'https://monitoring.solaredge.com/authenticated': '<h1>Anlagen</h1>',
+        }, redirects={'https://monitoring.solaredge.com/': 'https://login.solaredge.com/'})
+        await login.ensure(self.browser)
+        self.assertEqual(self.submissions, 1)
+        self.assertTrue((await login.ui_state(self.browser.page))['session_confirmed'])
+    async def test_unrecognized_monitoring_page_logs_safe_flags_without_submitting(self):
+        login = await self.start_routed({
+            'https://monitoring.solaredge.com/': '<p role="progressbar">PRIVATE_TEXT</p>',
+        })
+        with self.assertLogs('app.login', level='WARNING') as captured:
+            with self.assertRaises(TimeoutError):
+                await login.ensure(self.browser)
+        self.assertEqual(self.browser.stage, 'session_ui_wait')
+        self.assertEqual(login.next_login, 0)
+        self.assertEqual(self.submissions, 0)
+        output = '\n'.join(captured.output)
+        self.assertIn("'loading_indicator_visible': True", output)
+        self.assertNotIn('PRIVATE_TEXT', output)
     async def test_login_navigation_failure_can_retry_without_cooldown(self):
         login=await self.start()
         goto=self.browser.page.goto

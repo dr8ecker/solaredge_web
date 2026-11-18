@@ -447,6 +447,13 @@ class ScraperBrowserTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await self.scraper.select_today(page), self.day)
         self.assertIn('11 kWh', await page.locator('#dashboard-kpis').inner_text())
 
+    async def test_today_needs_no_refresh_when_single_day_is_already_selected(self):
+        await self.fixture()
+        page = self.browser.page
+        await page.get_by_role('combobox').evaluate("el => el.textContent = 'Day ▼'")
+        scraper = SolarEdgeScraper(replace(self.config, page_timeout=500))
+        self.assertEqual(await scraper.select_today(page), self.day)
+
     async def test_date_input_change_alone_does_not_make_old_energy_ready(self):
         await self.fixture()
         page = self.browser.page
@@ -459,9 +466,32 @@ class ScraperBrowserTests(unittest.IsolatedAsyncioTestCase):
           };
         }''', self.date_text)
         scraper = SolarEdgeScraper(replace(self.config, page_timeout=1500))
-        with self.assertRaises(TimeoutError) as caught:
-            await scraper.select_today(page)
+        with self.assertLogs('app.scraper', level='WARNING') as captured:
+            with self.assertRaises(TimeoutError) as caught:
+                await scraper.select_today(page)
         self.assertEqual(failure_details(caught.exception)['reason'], 'energy_ready')
+        output = '\n'.join(captured.output)
+        self.assertIn("'period_refresh_required': True", output)
+        self.assertIn("'period_refresh_seen': False", output)
+
+    async def test_energy_timeout_logs_only_fixed_scope_status_and_busy_count(self):
+        await self.fixture()
+        page = self.browser.page
+        await page.evaluate('''() => {
+          document.querySelector('#distribution-component-produktion').hidden = true;
+          document.querySelector('#distribution-component-verbrauch').textContent = 'PRIVATE_TEXT';
+          document.body.insertAdjacentHTML('beforeend', '<div role="progressbar">PRIVATE_TEXT</div>');
+        }''')
+        scraper = SolarEdgeScraper(replace(self.config, page_timeout=250))
+        with self.assertLogs('app.scraper', level='WARNING') as captured:
+            with self.assertRaises(TimeoutError):
+                await scraper.select_today(page)
+        output = '\n'.join(captured.output)
+        self.assertIn("'kpis': 'energy_visible'", output)
+        self.assertIn("'production_card': 'hidden'", output)
+        self.assertIn("'consumption_card': 'energy_missing'", output)
+        self.assertIn("'visible_busy_count': 1", output)
+        self.assertNotIn('PRIVATE_TEXT', output)
 
     async def test_zero_production_does_not_require_nonexistent_pv_slice(self):
         await self.fixture(production='0')

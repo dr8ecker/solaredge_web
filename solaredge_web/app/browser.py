@@ -7,7 +7,7 @@ import logging
 import os
 from urllib.parse import urlsplit
 
-from playwright.async_api import async_playwright
+from playwright.async_api import Response, async_playwright
 
 from .config import Config, ConfigurationError
 from .diagnostics import failure_details
@@ -92,8 +92,7 @@ class BrowserManager:
             await self.close()
             raise
 
-    async def load_monitoring(self) -> dict:
-        """A page-load test, not proof of login or a completed dashboard scrape."""
+    async def navigate_monitoring(self) -> Response | None:
         self.stage = 'monitoring_navigation'
         try:
             response = await self.page.goto(self.config.monitoring_url, wait_until="domcontentloaded")
@@ -108,6 +107,11 @@ class BrowserManager:
             raise RateLimited('Monitoring UI rate limit; automatic loading delayed')
         if response is not None and response.status >= 400:
             raise RuntimeError("Monitoring page returned an HTTP error")
+        return response
+
+    async def load_monitoring(self) -> dict:
+        """A page-load test, not proof of login or a completed dashboard scrape."""
+        response = await self.navigate_monitoring()
         # Wait for supplied public entry-page wording rather than a transient
         # "Loading" splash. These are UI text signals, not dashboard selectors.
         # Unknown pages fail the test instead of being reported as a ready UI.

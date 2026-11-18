@@ -39,7 +39,7 @@ Die Messwerte erscheinen nach Abschluss des jeweiligen Abrufs. Auch nach Mittern
 
 ## Stand
 
-**0.3.14** wartet auf einen sichtbaren, exakten Anlagennamen und erkennt beim Datumswechsel neu aufgebaute Energiekarten. Bei Timeouts nennt das Log den Wartepunkt. Das Add-on sichert den sichtbaren Seitenzustand privat für die Fehleranalyse.
+**0.3.15** erkennt nach dem Laden des Portals direkt die Anlagenansicht oder das Anmeldeformular. Bei einem Timeout in der Sitzungsprüfung zeigt das Log unter anderem, ob ein Ladeindikator oder ein Anmeldeformular sichtbar war.
 
 Login, Session, echte Tageswerte, Datumwechsel, MQTT und Energie-Dashboard wurden für frühere Versionen in AMD64-Containern mit separatem Home Assistant geprüft. Der Nutzer hat auf seinem x86-64-Home-Assistant erfolgreiche MQTT-Verbindung, Chromium-Start, Login und einen vollständigen Abruf mit gespeichertem Energie-Ledger bestätigt. ARM64 lässt sich bauen; ein nativer ARM64-Lauf und mehrtägiger Dauerbetrieb sind noch nicht bestätigt. Die Tageswerte und der Historienimport wurden für 0.3.0 zusätzlich mit echtem SolarEdge-Abruf und einer getrennten HA-Testinstanz geprüft. Einzelne Prüfergebnisse und ihr Versionsstand stehen in [VALIDATION.md](solaredge_web/VALIDATION.md).
 

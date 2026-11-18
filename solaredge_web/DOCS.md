@@ -153,9 +153,11 @@ Ab **0.3.13** erreicht auch eine Karte ohne jedes Prozentlabel die Balken-Ausles
 
 Ab **0.3.14** nennt `Dashboard failure details` bei Timeouts in den zentralen Warteschritten einen festen Grund, etwa `energy_tab`, `energy_ready`, `historical_date` oder `percentage_tooltip`.
 
+Bei `energy_ready` zeigt ab **0.3.15** die Zeile `Energy UI state`, ob jeder der drei Energiebereiche sichtbar ist und eine Energieeinheit mit Zahlenwert enthält, wie viele Ladeindikatoren sichtbar sind und ob eine notwendige Datumsaktualisierung erkannt wurde. Die Zeile enthält feste Statuswerte ohne Anlagenname oder Messwerte.
+
 Bei Validierungsfehlern und Timeouts während der Anlagenwahl oder beim Auslesen des Dashboards sichert das Add-on automatisch `/data/runtime/dashboard_failure_report.json`, auch im normalen Modus mit `debug: false`. Der Bericht enthält bereinigte sichtbare DOM-Elemente und die Fehlerdetails. Das Add-on erfasst sie vor dem Entladen der Seite. Jeder unterschiedliche Fehler wird bis zum nächsten erfolgreichen Abruf einmal gespeichert. Die Erfassung wartet höchstens zehn Sekunden. Ein Fehler beim Speichern unterbricht die normalen Wiederholungen nicht. Der Bericht kann Anlagen- und Energiedaten enthalten. Vor Weitergabe prüfen.
 
-`mode: smoke_test` prüft ausschließlich den Browser und die öffentliche Monitoring-Seite. Kein Login, kein Energieabruf, kein MQTT.
+`mode: smoke_test` prüft ausschließlich den Browser und die öffentliche Monitoring-Seite. Seit **0.3.15** ist `monitoring_ui_wait` der Erkennungsphase dieses Modus vorbehalten. Im normalen Abruf und in Discovery prüft `session_ui_wait` direkt die sichtbare Anlagenansicht, das Anmeldeformular und manuelle Bestätigungen. Bei einem Timeout protokolliert `Login UI state` feste Merkmale wie `body_text_present`, `loading_indicator_visible` und `visible_frame_count`.
 
 ## Fehler und Session
 
