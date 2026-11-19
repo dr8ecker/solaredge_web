@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.17
+
+- Die Hover-Suche in der Energiekarte berücksichtigt auch sichtbare SVG-Rechtecke und Balkensegmente ab einem CSS-Pixel Breite. Eindeutige Tooltips liefern weiterhin Richtung und Menge.
+- Ein einzelnes sichtbares Segment deckt die gesamte Kartenenergie ab, wenn sein Tooltip ausdrücklich 100 % meldet und seine Energiemenge genau dem angezeigten Gesamtwert entspricht. Erst dann wird der Gegenanteil mit null in der Anzeigeauflösung erfasst.
+
 ## 0.3.16
 
 - Erkennt die im deutschen SolarEdge-Portal umbenannte Zeile „Erzeugung“ und die bisherigen Produktions-IDs. Bei abweichender ID kann eine eindeutig beschriftete Zeile mit sichtbarem Energiewert neben „Verbrauch“ erkannt werden.

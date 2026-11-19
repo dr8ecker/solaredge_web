@@ -13,7 +13,7 @@ from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from .diagnostics import dashboard_wait
 from .discovery import KEYWORDS
 from .models import DayEnergy, ScrapeResult
-from .parser import ValueParser, ParseError
+from .parser import ValueParser, ParseError, Quantity
 from .selectors import SELECTORS, unique
 
 LOGGER = logging.getLogger(__name__)
@@ -88,12 +88,14 @@ UNLABELLED_BAR_POSITIONS = r"""scope => {
   const bounds = scope.getBoundingClientRect();
   const boxes = [], seen = new Set();
   for (const node of all) {
-    if (!(node instanceof HTMLElement) || !visible(node) || node.closest('[role=tooltip]')) continue;
+    const svgRect = node instanceof SVGRectElement;
+    if (!(node instanceof HTMLElement || svgRect) || !visible(node) || node.closest('[role=tooltip]')) continue;
     const style = getComputedStyle(node), r = node.getBoundingClientRect();
     const gradient = /^(?:repeating-)?linear-gradient\(/.test(style.backgroundImage);
-    const color = gradient ? style.backgroundImage : style.backgroundColor;
-    if (style.opacity === '0' || (!gradient && (color === 'transparent' || color === 'rgba(0, 0, 0, 0)')) ||
-        r.width < 2 || r.height < 8 || r.height > 48 || r.left < bounds.left - 1 ||
+    const color = svgRect ? style.fill : gradient ? style.backgroundImage : style.backgroundColor;
+    if (style.opacity === '0' || (svgRect && style.fillOpacity === '0') ||
+        ['none', 'transparent', 'rgba(0, 0, 0, 0)'].includes(color) ||
+        r.width < 1 || r.height < 8 || r.height > 48 || r.left < bounds.left - 1 ||
         r.right > bounds.right + 1 || r.top < bounds.top - 1 || r.bottom > bounds.bottom + 1) continue;
     const signature = [r.x, r.y, r.width, r.height].map(x => x.toFixed(2)).join(',') + color;
     if (seen.has(signature)) continue;
@@ -110,13 +112,14 @@ UNLABELLED_BAR_POSITIONS = r"""scope => {
     if (gap < -1 || gap > 3) continue;
     pairs.push([a, b].filter(box => !box.labelled));
   }
-  if (pairs.length !== 1) return [];
+  const single = pairs.length === 0 && boxes.length === 1 && !boxes[0].labelled;
+  if (!single && pairs.length !== 1) return [];
   const positions = [];
-  for (const target of pairs[0]) {
+  for (const target of single ? boxes : pairs[0]) {
     const x = target.r.left + target.r.width / 2, y = target.r.top + target.r.height / 2;
     const hit = document.elementFromPoint(x, y);
     if (!hit || !target.node.contains(hit)) return [];
-    positions.push({x, y});
+    positions.push({x, y, single});
   }
   return positions;
 }"""
@@ -144,7 +147,7 @@ class SolarEdgeScraper:
                 return name
         return None
 
-    async def unlabelled_bar_energy(self, page, card, card_name, allowed):
+    async def unlabelled_bar_energy(self, page, card, card_name, allowed, total):
         await page.mouse.move(0, 0)
         with dashboard_wait('tooltip_dismiss'):
             await page.get_by_role('tooltip').wait_for(state='hidden', timeout=5000)
@@ -180,6 +183,12 @@ class SolarEdgeScraper:
                 if key in parts:
                     raise ParseError('Tooltip is ambiguous', field=card_name)
                 parts[key] = ValueParser.parse(text, 'kWh', field=key)
+                if (position['single'] and re.match(r'^\s*100(?:[.,]0+)?\s*%', text)
+                        and parts[key].value == total.value):
+                    # A sole visible segment, its explicit energy, and the
+                    # card total establish the opposite share at UI precision.
+                    opposite = (allowed - parts.keys()).pop()
+                    parts[opposite] = Quantity(Decimal(0), total.unit, max(total.resolution, parts[key].resolution))
         return parts, len(positions), unknown, fields
 
     @staticmethod
@@ -387,7 +396,7 @@ class SolarEdgeScraper:
             bar_candidate_count, bar_fields = None, []
             if not allowed <= parts.keys() and not unrecognized_tooltip_count:
                 bar_parts, bar_candidate_count, bar_unknown, bar_fields = await self.unlabelled_bar_energy(
-                    page, card, card_name, allowed)
+                    page, card, card_name, allowed, total)
                 parts.update(bar_parts)
                 unrecognized_tooltip_count += bar_unknown
                 if bar_parts:

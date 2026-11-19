@@ -196,6 +196,64 @@ class ScraperBrowserTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(sample.values['grid_export_energy'], 5)
         self.assertEqual(sample.values['grid_import_energy'], 5)
 
+    async def test_single_production_segment_matches_screenshot(self):
+        await self.all_bars_without_labels()
+        await self.browser.page.evaluate('''() => {
+          const production = document.querySelector('#distribution-component-produktion');
+          const consumption = document.querySelector('#distribution-component-verbrauch');
+          document.querySelector('#dashboard-kpis span').textContent = '0.07 kWh';
+          production.firstChild.textContent = 'Erzeugung 0.07 kWh ';
+          consumption.firstChild.textContent = 'Verbrauch 4.09 kWh ';
+          const [exportBar, selfUse] = production.querySelectorAll('[data-tip]');
+          exportBar.remove();
+          selfUse.style.width = '14px';
+          selfUse.onmouseenter = () => {
+            const tooltip = document.querySelector('[role=tooltip]');
+            tooltip.textContent = '100% Ins Gebäude: 0.07 kWh';
+            tooltip.style.display = 'block';
+          };
+          const [grid, solar] = consumption.querySelectorAll('[data-tip]');
+          grid.dataset.tip = 'Vom Netz: 4.03 kWh';
+          solar.dataset.tip = 'Aus PV-Energie: 0.07 kWh';
+        }''')
+        sample = await self.scraper.day_energy(self.browser.page, self.day)
+        self.assertEqual(str(sample.values['pv_energy']), '0.07')
+        self.assertEqual(sample.values['grid_export_energy'], 0)
+        self.assertEqual(str(sample.values['self_consumption_energy']), '0.07')
+        self.assertEqual(str(sample.values['grid_import_energy']), '4.03')
+        await self.browser.page.locator('#distribution-component-produktion [data-tip]').evaluate('''el => {
+          const show = el.onmouseenter;
+          el.onmouseenter = () => {
+            show();
+            document.querySelector('[role=tooltip]').textContent = '100% Ins Gebäude: 0.06 kWh';
+          };
+        }''')
+        with self.assertRaises(ParseError):
+            await self.scraper.day_energy(self.browser.page, self.day)
+
+    async def test_unlabelled_svg_rectangles_read_explicit_tooltips(self):
+        await self.all_bars_without_labels()
+        await self.browser.page.locator('#distribution-component-produktion [data-tip]').evaluate_all('''els => {
+          const ns = 'http://www.w3.org/2000/svg';
+          const svg = document.createElementNS(ns, 'svg');
+          svg.setAttribute('width', '80');
+          svg.setAttribute('height', '28');
+          els[0].parentElement.replaceWith(svg);
+          els.forEach((el, index) => {
+            const rect = document.createElementNS(ns, 'rect');
+            rect.setAttribute('x', String(index * 40));
+            rect.setAttribute('width', '40');
+            rect.setAttribute('height', '28');
+            rect.setAttribute('fill', index === 0 ? 'cyan' : 'green');
+            rect.onmouseenter = el.onmouseenter;
+            rect.onmouseleave = el.onmouseleave;
+            svg.append(rect);
+          });
+        }''')
+        sample = await self.scraper.day_energy(self.browser.page, self.day)
+        self.assertEqual(sample.values['grid_export_energy'], 5)
+        self.assertEqual(sample.values['self_consumption_energy'], 5)
+
     async def test_duplicate_directions_on_two_unlabelled_segments_are_rejected(self):
         await self.all_bars_without_labels()
         await self.browser.page.locator('#distribution-component-verbrauch [data-tip]').evaluate_all('els=>els.forEach(el=>el.dataset.tip="Vom Netz: 5 kWh")')
