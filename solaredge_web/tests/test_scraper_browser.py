@@ -207,6 +207,9 @@ class ScraperBrowserTests(unittest.IsolatedAsyncioTestCase):
           const [exportBar, selfUse] = production.querySelectorAll('[data-tip]');
           exportBar.remove();
           selfUse.style.width = '14px';
+          const fill = document.createElement('span');
+          fill.style.cssText = 'display:block;width:100%;height:100%;background:linear-gradient(green, lime)';
+          selfUse.append(fill);
           selfUse.onmouseenter = () => {
             const tooltip = document.querySelector('[role=tooltip]');
             tooltip.textContent = '100% Ins Gebäude: 0.07 kWh';

@@ -86,7 +86,8 @@ UNLABELLED_BAR_POSITIONS = r"""scope => {
   const all = Array.from(scope.querySelectorAll('*')).slice(0, 300);
   const labels = all.filter(el => visible(el) && /^\d+(?:[.,]\d+)?\s*%$/.test(el.innerText?.trim() || ''));
   const bounds = scope.getBoundingClientRect();
-  const boxes = [], seen = new Set();
+  const targets = new Map();
+  let painted = 0;
   for (const node of all) {
     const svgRect = node instanceof SVGRectElement;
     if (!(node instanceof HTMLElement || svgRect) || !visible(node) || node.closest('[role=tooltip]')) continue;
@@ -97,11 +98,15 @@ UNLABELLED_BAR_POSITIONS = r"""scope => {
         ['none', 'transparent', 'rgba(0, 0, 0, 0)'].includes(color) ||
         r.width < 1 || r.height < 8 || r.height > 48 || r.left < bounds.left - 1 ||
         r.right > bounds.right + 1 || r.top < bounds.top - 1 || r.bottom > bounds.bottom + 1) continue;
-    const signature = [r.x, r.y, r.width, r.height].map(x => x.toFixed(2)).join(',') + color;
-    if (seen.has(signature)) continue;
-    seen.add(signature);
-    boxes.push({node, r, color, labelled: labels.some(label => node.contains(label))});
+    painted++;
+    const x = r.left + r.width / 2, y = r.top + r.height / 2;
+    const hit = document.elementFromPoint(x, y);
+    if (!hit || !node.contains(hit)) continue;
+    const signature = [r.x, r.y, r.width, r.height].map(value => value.toFixed(2)).join(',');
+    const labelled = targets.get(signature)?.labelled || labels.some(label => node.contains(label));
+    targets.set(signature, {r, color, labelled, x, y});
   }
+  const boxes = Array.from(targets.values());
   const pairs = [];
   for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
     const a = boxes[i], b = boxes[j];
@@ -113,15 +118,9 @@ UNLABELLED_BAR_POSITIONS = r"""scope => {
     pairs.push([a, b].filter(box => !box.labelled));
   }
   const single = pairs.length === 0 && boxes.length === 1 && !boxes[0].labelled;
-  if (!single && pairs.length !== 1) return [];
-  const positions = [];
-  for (const target of single ? boxes : pairs[0]) {
-    const x = target.r.left + target.r.width / 2, y = target.r.top + target.r.height / 2;
-    const hit = document.elementFromPoint(x, y);
-    if (!hit || !target.node.contains(hit)) return [];
-    positions.push({x, y, single});
-  }
-  return positions;
+  const selected = single ? boxes : pairs.length === 1 ? pairs[0] : [];
+  return {positions: selected.map(({x, y}) => ({x, y, single})),
+          painted, targets: boxes.length, pairs: pairs.length};
 }"""
 
 
@@ -151,13 +150,18 @@ class SolarEdgeScraper:
         await page.mouse.move(0, 0)
         with dashboard_wait('tooltip_dismiss'):
             await page.get_by_role('tooltip').wait_for(state='hidden', timeout=5000)
-        positions = await card.evaluate(UNLABELLED_BAR_POSITIONS)
+        await card.scroll_into_view_if_needed(timeout=5000)
+        scan = await card.evaluate(UNLABELLED_BAR_POSITIONS)
+        positions = scan['positions']
+        if not positions:
+            LOGGER.warning('Energy bar scan in %s: %s', card_name,
+                           {key: scan[key] for key in ('painted', 'targets', 'pairs')})
         parts, fields, unknown = {}, [], 0
         for index in range(len(positions)):
             await page.mouse.move(0, 0)
             with dashboard_wait('tooltip_dismiss'):
                 await page.get_by_role('tooltip').wait_for(state='hidden', timeout=5000)
-            current = await card.evaluate(UNLABELLED_BAR_POSITIONS)
+            current = (await card.evaluate(UNLABELLED_BAR_POSITIONS))['positions']
             if len(current) != len(positions):
                 continue
             position = current[index]
@@ -359,7 +363,7 @@ class SolarEdgeScraper:
                       const labels = Array.from(scope.querySelectorAll('*')).some(el =>
                         el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden' &&
                         /^\d+(?:[.,]\d+)?\s*%$/.test(el.innerText?.trim() || ''));
-                      return labels || (BAR_POSITIONS)(scope).length > 0;
+                      return labels || (BAR_POSITIONS)(scope).positions.length > 0;
                     }""".replace('BAR_POSITIONS', UNLABELLED_BAR_POSITIONS),
                         arg=selector, timeout=1500)
                 except PlaywrightTimeoutError:

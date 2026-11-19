@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.18
+
+- Übereinanderliegende Elemente mit identischer Balkenfläche zählen als ein Hover-Ziel. Vor der Suche scrollt der Browser die Energiekarte ins Sichtfeld.
+- Bei fehlenden Hover-Zielen protokolliert `Energy bar scan` die Anzahl farbiger Elemente, erreichbarer Flächen und passender Paare.
+
 ## 0.3.17
 
 - Die Hover-Suche in der Energiekarte berücksichtigt auch sichtbare SVG-Rechtecke und Balkensegmente ab einem CSS-Pixel Breite. Eindeutige Tooltips liefern weiterhin Richtung und Menge.
